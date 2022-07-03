@@ -12,13 +12,13 @@
 -behaviour(gen_statem).
 
 %% API
--export([start/0,stop/0]).
+-export([start/5,stop/1]).
 
 %% gen_statem callbacks
 -export([init/1, format_status/2, terminate/3, callback_mode/0]).
 -export([walking/3,in_queue/3,on_ride/3]).
--define(WALKING_TIMEOUT, 10000).
--define(SERVER, ?MODULE).
+-define(WALKING_TIMEOUT, 500).
+%%-define(SERVER, ?MODULE).
 
 
 %%%===================================================================
@@ -31,11 +31,11 @@
 
 %start_link() ->
  % gen_statem:start_link({local, ?SERVER}, ?MODULE, [], []).
-start() ->
-  gen_statem:start_link(?MODULE, [], []).
+start(Father,Child_Name,Destination,Position,Money) ->
+  gen_statem:start_link({local, Child_Name},?MODULE, [Father,Child_Name,Destination,Position,Money], []).
  % gen_statem:call(?SERVER, start).
-stop() ->
-  gen_statem:stop(?SERVER).
+stop(Name) ->
+  gen_statem:stop(Name).
 %%%===================================================================
 %%% gen_statem callbacks
 %%%===================================================================
@@ -44,12 +44,14 @@ stop() ->
 %% @doc Whenever a gen_statem is started using gen_statem:start/[3,4] or
 %% gen_statem:start_link/[3,4], this function is called by the new
 %% process to initialize.
-init([]) ->
-  ets:new(data,[set,named_table]),
-  ets:insert(data,{money,rand:uniform(5)*10}),
-  ets:insert(data,{position, {0,0}}),
-  ets:insert(data,{destination, {0,0}}),
-  {ok, walking, null}.
+init([Father,Child_Name,Destination,Position,Money]) ->
+  ets:new(Child_Name,[set,named_table]),
+  ets:insert(Child_Name,{money,Money}),
+  ets:insert(Child_Name,{position,Position}),
+  ets:insert(Child_Name,{destination, Destination}),
+  ets:insert(Child_Name,{father, Father}),
+ %io:format("init ~p~p~n",[Position,Destination]),
+  {ok, walking, Child_Name}.
 
 %% @private
 %% @doc This function is called by a gen_statem when it needs to find out
@@ -71,20 +73,36 @@ format_status(_Opt, [_PDict, _StateName, _State]) ->
 %% call/2, cast/2, or as a normal process message.
 
 walking(enter, _OldState, Data) ->
-  io:format("start walking ~n"),
+  %io:format("start walking ~n"),
   %%%%select dest!!!!
-  case rand:uniform(4) of
-    1 -> io:format("Ferris wheel ~n"),NewDest = {5,5};
-    2 -> io:format("Pirate ship ~n"),NewDest = {10,3};
-    3 -> io:format("roller coaster ~n"),NewDest = {0,7};
-    4 -> io:format("go home ~n"),NewDest = {10,10}
+  [{_,Destination}] = ets:lookup(Data,destination),
+  [{_,Position}] = ets:lookup(Data,position),
+  %io:format("start walking ~p~p~n",[Position,Destination]),
+  case Destination =:= Position of
+    true ->
+      [{_,Money}] = ets:lookup(Data,money),
+      case Money>0 of
+        true ->   case rand:uniform(4) of
+                    1 -> NewDest = {15,13};%io:format("Ferris wheel ~n")
+                    2 -> NewDest = {5,17};%io:format("Pirate ship ~n")
+                    3 -> NewDest = {5,7};%io:format("roller coaster ~n")
+                    4 -> NewDest = {15,5}%io:format("Haunted house ~n")
+                  end;
+        false ->
+            %io:format("go home ~n"),
+            NewDest = {0,0}
+      end,
+      ets:update_element(Data,destination,{2,NewDest});
+    _ -> ok
   end,
-  ets:update_element(data,destination,{2,NewDest}),
   {next_state, walking, Data, 1000};
 walking(timeout, _, Data) ->
-  [{_, {CurX,CurY}}] = ets:lookup(data,position),
-  [{_,{DstX,DstY}}] = ets:lookup(data,destination),
-  io:format("CurX: ~p CurY: ~p  ~n",[CurX,CurY]),
+  [{_, {CurX,CurY}}] = ets:lookup(Data,position),
+  [{_,{DstX,DstY}}] = ets:lookup(Data,destination),
+  %io:format("CurX: ~p CurY: ~p  ~n",[CurX,CurY]),
+  [{_,Father}] = ets:lookup(Data,father),
+  [{_,Money}] = ets:lookup(Data,money),
+  gen_server:cast({global,Father},{Data,{{DstX,DstY},{CurX,CurY},Money}}),
   case CurX =:= DstX andalso CurY =:= DstY of
     false ->
       %%%%%Update X pos%%%%%%
@@ -103,24 +121,26 @@ walking(timeout, _, Data) ->
                   end;
          _ -> NewY = CurY
       end,
-      ets:update_element(data,position,{2, {NewX,NewY}}),{next_state, walking, Data, ?WALKING_TIMEOUT};
+      ets:update_element(Data,position,{2, {NewX,NewY}}),{next_state, walking, Data, ?WALKING_TIMEOUT};
     %true  when {CurX,CurY} =:= {10,10} ->  child:stop();
     _    -> {next_state, in_queue, Data}%%%arive
   end.
 
 in_queue(enter, _OldState, Data) ->
-  io:format("in_queue~n"),
+  %io:format("in_queue~n"),
   {next_state, in_queue, Data, 3000};
 in_queue(timeout, _, Data) ->
-  io:format("finish_queue~n"),
+  %io:format("finish_queue~n"),
   {next_state, on_ride, Data}.
 
 
 on_ride(enter, _OldState, Data) ->
-  io:format("on_ride~n"),
+  %io:format("on_ride~n"),
+  [{_,Money}] = ets:lookup(Data,money) ,
+  ets:update_element(Data,money,{2,Money-1}),
   {next_state, on_ride, Data, 3000};
 on_ride(timeout, _, Data) ->
-  io:format("finish_ride~n"),
+  %io:format("finish_ride~n"),
   {next_state, walking, Data}.
 
 %walking({call,From}, forward, State)->
@@ -154,8 +174,7 @@ on_ride(timeout, _, Data) ->
 %% terminate. It should be the opposite of Module:init/1 and do any
 %% necessary cleaning up. When it returns, the gen_statem terminates with
 %% Reason. The return value is ignored.
-terminate(_Reason, _StateName, _State ) ->
-  ets:delete(data).
+terminate(_Reason, _StateName, Data ) ->ets:delete(Data).
 
 
 
