@@ -7,7 +7,7 @@
 %%% Created : 25. Jun 2022 16:20
 %%%-------------------------------------------------------------------
 -module(child).
--author("yossi").
+-author("Yossi Bouskila, Tal Tubul").
 
 -behaviour(gen_statem).
 
@@ -17,7 +17,7 @@
 %% gen_statem callbacks
 -export([init/1, format_status/2, terminate/3, callback_mode/0]).
 -export([walking/3,in_queue/3,on_ride/3]).
--define(WALKING_TIMEOUT, 500).
+-define(WALKING_TIMEOUT, 5000).
 %%-define(SERVER, ?MODULE).
 
 

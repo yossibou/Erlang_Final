@@ -6,13 +6,11 @@
 %%% @end
 %%% Created : 25. Jun 2022 16:20
 %%%-------------------------------------------------------------------
-host:start(pc1,{0,0},{0,10,0,10}).
-host:start(pc2,{0,20},{0,10,10,20}).
-host:start(pc3,{20,20},{10,20,10,20}).
-host:start(pc4,{20,0},{10,20,0,10}).
+
 %[ets:tab2list(pc1_children),ets:tab2list(pc2_children),ets:tab2list(pc3_children),ets:tab2list(pc4_children)].
 
 -module(host).
+-author("Yossi Bouskila, Tal Tubul").
 -behaviour(gen_server).
 -export([start/3,stop/1]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -22,8 +20,8 @@ start(HostName,Entrance,Borders) ->
     Return = gen_server:start_link({global, HostName}, ?MODULE, [HostName,Entrance,Borders], []),
     %io:format("start_link: ~p~n", [Return]),
     Return.
-stop({_,Ref}) ->
-  gen_server:stop(Ref).
+stop(HostName) ->
+  gen_server:stop({global, HostName}).
 init([HostName,Entrance,Borders]) ->
     Ets_children=list_to_atom(lists:flatten(io_lib:format("~p_~p", [HostName,children]))),
     ets:new(Ets_children,[set,named_table]),
@@ -76,14 +74,19 @@ handle_cast(Msg, HostName) ->
 
 handle_info(_Info, HostName) ->
     new_child(HostName),
+    Ets_children=list_to_atom(lists:flatten(io_lib:format("~p_~p", [HostName,children]))),
+    Children = ets:tab2list(Ets_children),
+    gen_server:cast({global,master},Children),
+    %io:format("handle_call: ~p~n", [Children]),
     {noreply, HostName,2000}.
 
 terminate(_Reason, HostName) ->
-    %Return = ok,
     Ets_children=list_to_atom(lists:flatten(io_lib:format("~p_~p", [HostName,children]))),
     Children = ets:tab2list(Ets_children),
     Function = fun({Child_name,_}) -> child:stop(Child_name) end,
     lists:foreach(Function, Children),
+    ets:delete(HostName),
+    ets:delete(Ets_children),
     %io:format("terminate: ~p~n", [Return]),
     ok.
 
@@ -97,12 +100,14 @@ new_child(HostName) ->
         1 ->
              [{_,Children_count}] = ets:lookup(HostName,children_count),
              Child_name = list_to_atom(lists:flatten(io_lib:format("child_~p_N~B", [HostName,Children_count]))),
+             Ets_children=list_to_atom(lists:flatten(io_lib:format("~p_~p", [HostName,children]))),
              [{_,Entrance}] = ets:lookup(HostName,entrance),
              ets:update_element(HostName,children_count,{2,Children_count+1}),
              %Father,Child_Name,Destination,Position,Money
-             child:start(HostName,Child_name,Entrance,Entrance,rand:uniform(10)),
-             Ets_children=list_to_atom(lists:flatten(io_lib:format("~p_~p", [HostName,children]))),
-             ets:insert(Ets_children,{Child_name,[]}),
+             Money = rand:uniform(10),
+             ets:insert(Ets_children,{Child_name,[{Entrance,Entrance,Money}]}),
+             child:start(HostName,Child_name,Entrance,Entrance,Money),
+
              io:format("New child: ~p~n", [Children_count+1]);
         _ -> ok
     end.
