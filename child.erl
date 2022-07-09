@@ -17,7 +17,7 @@
 %% gen_statem callbacks
 -export([init/1, format_status/2, terminate/3, callback_mode/0]).
 -export([walking/3,in_queue/3,on_ride/3]).
--define(WALKING_TIMEOUT, 5000).
+-define(WALKING_TIMEOUT, 200).
 %%-define(SERVER, ?MODULE).
 
 
@@ -50,7 +50,7 @@ init([Father,Child_Name,Destination,Position,Money]) ->
   ets:insert(Child_Name,{position,Position}),
   ets:insert(Child_Name,{destination, Destination}),
   ets:insert(Child_Name,{father, Father}),
- %io:format("init ~p~p~n",[Position,Destination]),
+  %io:format("init ~p~p~n",[Position,Destination]),
   {ok, walking, Child_Name}.
 
 %% @private
@@ -81,12 +81,14 @@ walking(enter, _OldState, Data) ->
   case Destination =:= Position of
     true ->
       [{_,Money}] = ets:lookup(Data,money),
+      Ride_dst = rand:uniform(4),
+      ets:insert(Data,{ride_dst,Ride_dst}),
       case Money>0 of
-        true ->   case rand:uniform(4) of
-                    1 -> NewDest = {15,13};%io:format("Ferris wheel ~n")
-                    2 -> NewDest = {5,17};%io:format("Pirate ship ~n")
-                    3 -> NewDest = {5,7};%io:format("roller coaster ~n")
-                    4 -> NewDest = {15,5}%io:format("Haunted house ~n")
+        true ->   case Ride_dst of
+                    1 -> NewDest = {590,252};%io:format("Ferris wheel ~n");
+                    2 -> NewDest = {200,162};%io:format("Pirate ship ~n");
+                    3 -> NewDest = {160,377};%io:format("roller coaster ~n")
+                    4 -> NewDest = {426,423}%io:format("Haunted house ~n")
                   end;
         false ->
             %io:format("go home ~n"),
@@ -95,7 +97,7 @@ walking(enter, _OldState, Data) ->
       ets:update_element(Data,destination,{2,NewDest});
     _ -> ok
   end,
-  {next_state, walking, Data, 1000};
+  {next_state, walking, Data, ?WALKING_TIMEOUT};
 walking(timeout, _, Data) ->
   [{_, {CurX,CurY}}] = ets:lookup(Data,position),
   [{_,{DstX,DstY}}] = ets:lookup(Data,destination),
@@ -128,7 +130,7 @@ walking(timeout, _, Data) ->
 
 in_queue(enter, _OldState, Data) ->
   %io:format("in_queue~n"),
-  {next_state, in_queue, Data, 3000};
+  {next_state, in_queue, Data, 5000};
 in_queue(timeout, _, Data) ->
   %io:format("finish_queue~n"),
   {next_state, on_ride, Data}.
@@ -136,10 +138,16 @@ in_queue(timeout, _, Data) ->
 
 on_ride(enter, _OldState, Data) ->
   %io:format("on_ride~n"),
-  [{_,Money}] = ets:lookup(Data,money) ,
+  [{_,Money}] = ets:lookup(Data,money),
+
   ets:update_element(Data,money,{2,Money-1}),
+  ender_ride(Data),
   {next_state, on_ride, Data, 3000};
 on_ride(timeout, _, Data) ->
+  [{_,{DstX,DstY}}] = ets:lookup(Data,destination),
+  [{_,Father}] = ets:lookup(Data,father),
+  [{_,Money}] = ets:lookup(Data,money),
+  gen_server:cast({global,Father},{Data,{{DstX,DstY},{DstX,DstY},Money}}),
   %io:format("finish_ride~n"),
   {next_state, walking, Data}.
 
@@ -181,3 +189,29 @@ terminate(_Reason, _StateName, Data ) ->ets:delete(Data).
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+ender_ride(Data)->
+  [{_,{DstX,DstY}}] = ets:lookup(Data,destination),
+  [{_,Father}] = ets:lookup(Data,father),
+  [{_,Money}] = ets:lookup(Data,money),
+  [{_,Ride_dst}] = ets:lookup(Data,ride_dst),
+  case Ride_dst of
+    1 -> case rand:uniform(2) of
+            1 -> Cur_pos = {614,126};
+            2 -> Cur_pos = {707,128}
+         end;
+    2 -> case rand:uniform(2) of
+            1 -> Cur_pos = {305,91};
+            2 -> Cur_pos = {325,68}
+         end;
+    3 -> case rand:uniform(3) of
+            1 -> Cur_pos = {189,270};
+            2 -> Cur_pos = {207,271};
+            3 -> Cur_pos = {296,309}
+         end;
+    4 -> case rand:uniform(3) of
+            1 -> Cur_pos = {474,387};
+            2 -> Cur_pos = {534,390};
+            3 -> Cur_pos = {677,199}
+         end
+  end,
+  gen_server:cast({global,Father},{Data,{{DstX,DstY},Cur_pos,Money}}).
