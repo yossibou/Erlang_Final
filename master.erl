@@ -24,16 +24,21 @@ stop() ->
   gen_server:stop({global, master}).
 init([]) ->
 
-    %net_kernel:monitor_nodes(true), % monitor nodes
-    %timer:sleep(200),
-    %net_kernel:connect_node(?PC1), % connect all nodes
-    %timer:sleep(200),
-    %net_kernel:connect_node(?PC2),
-    %timer:sleep(200),
-    %net_kernel:connect_node(?PC3),
-    %timer:sleep(200),
-    %net_kernel:connect_node(?PC4),
-    %timer:sleep(200),
+    net_kernel:monitor_nodes(true), % monitor nodes
+    timer:sleep(200),
+    net_kernel:connect_node(?PC1), % connect all nodes
+    timer:sleep(200),
+    net_kernel:connect_node(?PC2),
+    timer:sleep(200),
+    net_kernel:connect_node(?PC3),
+    timer:sleep(200),
+    net_kernel:connect_node(?PC4),
+    timer:sleep(200),
+
+    put(?PC1,?PC1), % put all PCs in process dictionary
+    put(?PC2,?PC2),
+    put(?PC3,?PC3),
+    put(?PC4,?PC4),
 
     ets:new(children,[set,named_table]),
     ets:new(data,[set,named_table]),
@@ -59,13 +64,20 @@ handle_call(Request, _From, []) ->
 handle_cast(Msg, []) ->
     Function = fun({Child_name,Data}) -> ets:insert(children,{Child_name,Data}) end,
     lists:foreach(Function, Msg),
+    Children_count = length(ets:tab2list(children)),
+    ets:insert(data,{children_count,Children_count}),
+    %io:format("children_count: ~p~n", [Children_count]),
+    gen_server:cast({global,?PC1},{children_count,Children_count}),
+    gen_server:cast({global,?PC2},{children_count,Children_count}),
+    gen_server:cast({global,?PC3},{children_count,Children_count}),
+    gen_server:cast({global,?PC4},{children_count,Children_count}),
     %io:format("handle_call: ~p~n", [Msg]),
     %{Child_name,Data} = Msg,
     {noreply, [],2000}.
 
 
 handle_info(_Info, []) ->
-    io:format("handle_call: ~p~n", [ets:tab2list(children)]),
+    %io:format("handle_call: ~p~n", [ets:tab2list(children)]),
     {noreply, [],2000}.
 
 terminate(_Reason, []) ->

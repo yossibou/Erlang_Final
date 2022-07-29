@@ -5,3 +5,8 @@
 -define(PC4, 'PC4@127.0.0.1').
 -define(Master,'home@127.0.0.1').
 
+%erl -setcookie dough -name Master@127.0.0.1
+%erl -setcookie dough -name PC1@127.0.0.1
+%erl -setcookie dough -name PC2@127.0.0.1
+%erl -setcookie dough -name PC3@127.0.0.1
+%erl -setcookie dough -name PC4@127.0.0.1

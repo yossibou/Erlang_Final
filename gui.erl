@@ -70,6 +70,7 @@ handle_sync_event(#wx{event=#wxPaint{}}, _,  _State = #state{
   wxDC:clear(DC),
   wxDC:drawBitmap(DC,BmpMap,{0,0}),
   Children = ets:tab2list(children),
+  %io:format("gui: ~p~n", [Children]),
   Function = fun({_,{_,{X,Y},_}}) -> wxDC:drawBitmap(DC,BmpChild,{X,Y}) end,
   lists:foreach(Function, Children);
  % printChildren();

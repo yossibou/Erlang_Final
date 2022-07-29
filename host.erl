@@ -16,7 +16,8 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
 -define(STATUS_TIMEOUT, 50).
--define(RATE, 2000). %STATUS_TIMEOUT*RATE
+-define(MaxTotalChildren, 10).
+-define(RATE, 500). %STATUS_TIMEOUT*RATE
 
 start(HostName,Entrance,Borders) ->
     Return = gen_server:start_link({global, HostName}, ?MODULE, [HostName,Entrance,Borders], []),
@@ -36,6 +37,7 @@ init([HostName,Entrance,Borders]) ->
     ets:insert(HostName,{south_border,South_border}),
     ets:insert(HostName,{north_border,North_border}),
     ets:insert(HostName,{children_count,0}),
+    ets:insert(HostName,{total_child,0}),
     Return = {ok, HostName,?STATUS_TIMEOUT},
     Return.
 
@@ -44,9 +46,12 @@ handle_call(Request, _From, HostName) ->
     Reply = ok,
     %io:format("handle_call: ~p~n", [Request]),
     {reply, Reply, HostName,?STATUS_TIMEOUT}.
+handle_cast({children_count,Children_count}, HostName) ->
+    %io:format("msg: ~p~n", [Children_count]),
+    ets:insert(HostName,{total_child,Children_count});
 
 handle_cast(Msg, HostName) ->
-    io:format("msg: ~p~n", [Msg]),
+    %io:format("msg: ~p~n", [Msg]),
     {Child_name,Data} = Msg,
     Ets_children=list_to_atom(lists:flatten(io_lib:format("~p_~p", [HostName,children]))),
     case [] =:= ets:lookup(Ets_children,Child_name) of
@@ -80,7 +85,7 @@ handle_info(_Info, HostName) ->
     Ets_children=list_to_atom(lists:flatten(io_lib:format("~p_~p", [HostName,children]))),
     Children = ets:tab2list(Ets_children),
     gen_server:cast({global,master},Children),
-    io:format("handle_call-host: ~p~n", [Children]),
+    %io:format("handle_call-host: ~p~n", [Children]),
     {noreply, HostName,?STATUS_TIMEOUT}.
 
 terminate(_Reason, HostName) ->
@@ -99,21 +104,27 @@ code_change(_OldVsn, State, _Extra) ->
     Return.
 
 new_child(HostName) ->
-    case rand:uniform(?RATE) of
-        1 ->
-             [{_,Children_count}] = ets:lookup(HostName,children_count),
-             Child_name = list_to_atom(lists:flatten(io_lib:format("child_~p_N~B", [HostName,Children_count]))),
-             Ets_children=list_to_atom(lists:flatten(io_lib:format("~p_~p", [HostName,children]))),
-             [{_,Entrance}] = ets:lookup(HostName,entrance),
-             ets:update_element(HostName,children_count,{2,Children_count+1}),
-             %Father,Child_Name,Destination,Position,Money
-             Money = rand:uniform(10),
-             ets:insert(Ets_children,{Child_name,[{Entrance,Entrance,Money}]}),
-             child:start(HostName,Child_name,Entrance,Entrance,Money),
-             %spawn(child,start,[HostName,Child_name,Entrance,Entrance,Money]),
-             %rpc:call(HostName,child,start,[HostName,Child_name,Entrance,Entrance,Money]),
-             io:format("New child: ~p~n", [Children_count+1]);
-        _ -> ok
+    [{_,Total_child}] = ets:lookup(HostName,total_child),
+    %io:format("new_child-host: ~p~n", [Total_child]),
+    case  Total_child<?MaxTotalChildren of
+        true ->
+            case rand:uniform(?RATE) of
+                1 ->
+                     [{_,Children_count}] = ets:lookup(HostName,children_count),
+                     Child_name = list_to_atom(lists:flatten(io_lib:format("child_~p_N~B", [HostName,Children_count]))),
+                     Ets_children=list_to_atom(lists:flatten(io_lib:format("~p_~p", [HostName,children]))),
+                     [{_,Entrance}] = ets:lookup(HostName,entrance),
+                     ets:update_element(HostName,children_count,{2,Children_count+1}),
+                     %Father,Child_Name,Destination,Position,Money
+                     Money = rand:uniform(10),
+                     ets:insert(Ets_children,{Child_name,[{Entrance,Entrance,Money}]}),
+                     child:start(HostName,Child_name,Entrance,Entrance,Money),
+                     %spawn(child,start,[HostName,Child_name,Entrance,Entrance,Money]),
+                     %rpc:call(HostName,child,start,[HostName,Child_name,Entrance,Entrance,Money]),
+                     io:format("New child: ~p~n", [Children_count+1]);
+                _ -> ok
+            end;
+        _ -> io:format("10 child ~n")
     end.
 
 import_child(HostName,[{Child_name,{Destination,Position,Money}}]) ->

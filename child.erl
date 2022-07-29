@@ -82,7 +82,7 @@ walking(enter, _OldState, Data) ->
     true ->
       [{_,Money}] = ets:lookup(Data,money),
       Ride_dst = rand:uniform(4),
-      ets:insert(Data,{ride_dst,Ride_dst}),
+      %ets:insert(Data,{ride_dst,Ride_dst}),
       case Money>0 of
         true ->   case Ride_dst of
                     1 -> NewDest = {590,252};%io:format("Ferris wheel ~n");
@@ -100,11 +100,16 @@ walking(enter, _OldState, Data) ->
   {next_state, walking, Data, ?WALKING_TIMEOUT};
 walking(timeout, _, Data) ->
   [{_, {CurX,CurY}}] = ets:lookup(Data,position),
-  [{_,{DstX,DstY}}] = ets:lookup(Data,destination),
+  [{_,Money}] = ets:lookup(Data,money),
+  case Money>0 of
+    true  -> [{_,{DstX,DstY}}] = ets:lookup(Data,destination);
+    false -> {DstX,DstY} = {0,0}
+  end,
   %io:format("CurX: ~p CurY: ~p  ~n",[CurX,CurY]),
   [{_,Father}] = ets:lookup(Data,father),
-  [{_,Money}] = ets:lookup(Data,money),
+
   gen_server:cast({global,Father},{Data,{{DstX,DstY},{CurX,CurY},Money}}),
+
   case CurX =:= DstX andalso CurY =:= DstY of
     false ->
       %%%%%Update X pos%%%%%%
@@ -141,7 +146,7 @@ on_ride(enter, _OldState, Data) ->
   [{_,Money}] = ets:lookup(Data,money),
 
   ets:update_element(Data,money,{2,Money-1}),
-  ender_ride(Data),
+  enter_ride(Data),
   {next_state, on_ride, Data, 3000};
 on_ride(timeout, _, Data) ->
   [{_,{DstX,DstY}}] = ets:lookup(Data,destination),
@@ -189,29 +194,30 @@ terminate(_Reason, _StateName, Data ) ->ets:delete(Data).
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-ender_ride(Data)->
+enter_ride(Data)->
   [{_,{DstX,DstY}}] = ets:lookup(Data,destination),
   [{_,Father}] = ets:lookup(Data,father),
   [{_,Money}] = ets:lookup(Data,money),
-  [{_,Ride_dst}] = ets:lookup(Data,ride_dst),
-  case Ride_dst of
-    1 -> case rand:uniform(2) of
+  %[{_,Ride_dst}] = ets:lookup(Data,ride_dst),
+  case {DstX,DstY} of
+    {590,252} -> case rand:uniform(2) of
             1 -> Cur_pos = {614,126};
             2 -> Cur_pos = {707,128}
          end;
-    2 -> case rand:uniform(2) of
+    {200,162} -> case rand:uniform(2) of
             1 -> Cur_pos = {305,91};
             2 -> Cur_pos = {325,68}
          end;
-    3 -> case rand:uniform(3) of
+    {160,377} -> case rand:uniform(3) of
             1 -> Cur_pos = {189,270};
             2 -> Cur_pos = {207,271};
             3 -> Cur_pos = {296,309}
          end;
-    4 -> case rand:uniform(3) of
+    {426,423} -> case rand:uniform(3) of
             1 -> Cur_pos = {474,387};
             2 -> Cur_pos = {534,390};
             3 -> Cur_pos = {677,199}
          end
   end,
   gen_server:cast({global,Father},{Data,{{DstX,DstY},Cur_pos,Money}}).
+
