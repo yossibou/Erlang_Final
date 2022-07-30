@@ -32,7 +32,7 @@
 %start_link() ->
  % gen_statem:start_link({local, ?SERVER}, ?MODULE, [], []).
 start(Father,Child_Name,Destination,Position,Money) ->
-  gen_statem:start_link({local, Child_Name},?MODULE, [Father,Child_Name,Destination,Position,Money], []).
+  gen_statem:start_link({global, Child_Name},?MODULE, [Father,Child_Name,Destination,Position,Money], []).
  % gen_statem:call(?SERVER, start).
 stop(Name) ->
   gen_statem:stop(Name).

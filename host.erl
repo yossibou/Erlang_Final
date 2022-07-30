@@ -101,7 +101,7 @@ handle_info(_Info, HostName) ->
 terminate(_Reason, HostName) ->
     Ets_children=list_to_atom(lists:flatten(io_lib:format("~p_~p", [HostName,children]))),
     Children = ets:tab2list(Ets_children),
-    Function = fun({Child_name,_}) -> rpc:call(HostName,child,stop,[Child_name]) end,
+    Function = fun({Child_name,_}) -> rpc:call(node(),child,stop,[Child_name]) end,
     lists:foreach(Function, Children),
     ets:delete(HostName),
     ets:delete(Ets_children),
@@ -131,7 +131,7 @@ new_child(HostName) ->
                      %io:format("New child: ~p~n", [Children_count+1]),
                      %%child:start(HostName,Child_name,Entrance,Entrance,Money),
                      %spawn(child,start,[HostName,Child_name,Entrance,Entrance,Money]),
-                     rpc:call(HostName,child,start,[HostName,Child_name,Entrance,Entrance,Money]),
+                     rpc:call(node(),child,start,[HostName,Child_name,Entrance,Entrance,Money]),
                      io:format("New child: ~p~n", [Children_count+1]);
                 _ -> ok
             end;
