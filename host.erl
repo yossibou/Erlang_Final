@@ -12,20 +12,20 @@
 -module(host).
 -author("Yossi Bouskila, Tal Tubul").
 -behaviour(gen_server).
--export([start/3,stop/1]).
+-export([start/4,stop/1]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
 -define(STATUS_TIMEOUT, 50).
 -define(MaxTotalChildren, 10).
 -define(RATE, 500). %STATUS_TIMEOUT*RATE
 
-start(HostName,Entrance,Borders) ->
-    Return = gen_server:start_link({global, HostName}, ?MODULE, [HostName,Entrance,Borders], []),
+start(HostName,Entrance,Borders,Count) ->
+    Return = gen_server:start_link({global, HostName}, ?MODULE, [HostName,Entrance,Borders,Count], []),
     %io:format("start_link: ~p~n", [Return]),
     Return.
 stop(HostName) ->
   gen_server:stop({global, HostName}).
-init([HostName,Entrance,Borders]) ->
+init([HostName,Entrance,Borders,Count]) ->
     Ets_children=list_to_atom(lists:flatten(io_lib:format("~p_~p", [HostName,children]))),
     ets:new(Ets_children,[set,named_table]),
     ets:new(HostName,[set,named_table]),
@@ -36,19 +36,27 @@ init([HostName,Entrance,Borders]) ->
     ets:insert(HostName,{east_border,East_border}),
     ets:insert(HostName,{south_border,South_border}),
     ets:insert(HostName,{north_border,North_border}),
-    ets:insert(HostName,{children_count,0}),
+    ets:insert(HostName,{children_count,Count}),
     ets:insert(HostName,{total_child,0}),
+    io:format("ready"),
     Return = {ok, HostName,?STATUS_TIMEOUT},
     Return.
 
-handle_call(Request, _From, HostName) ->
-    import_child(HostName,Request),
+handle_call({transfer,_,Data}, _From, HostName) ->
+    import_child(HostName,Data),
     Reply = ok,
-    %io:format("handle_call: ~p~n", [Request]),
+    io:format("handle_call: ~p~n", [Data]),
     {reply, Reply, HostName,?STATUS_TIMEOUT}.
+
+handle_cast({transfer,_,Data}, HostName) ->
+    import_child(HostName,Data),
+    io:format("handle_call: ~p~n", [Data]),
+    {noreply, HostName,?STATUS_TIMEOUT};
+
 handle_cast({children_count,Children_count}, HostName) ->
     %io:format("msg: ~p~n", [Children_count]),
-    ets:insert(HostName,{total_child,Children_count});
+    ets:insert(HostName,{total_child,Children_count}),
+    {noreply, HostName,?STATUS_TIMEOUT};
 
 handle_cast(Msg, HostName) ->
     %io:format("msg: ~p~n", [Msg]),
@@ -138,8 +146,10 @@ handle_child_transfer(Child_name,Dst_pc,Ets_children)->
     child:stop(Child_name),
     Data = ets:lookup(Ets_children,Child_name),
     io:format("transfer: ~p to: ~p from: ~p data: ~p~n", [Child_name,Dst_pc,Ets_children,Data]),
-    gen_server:call({global,Dst_pc},Data),
-    ets:delete(Ets_children,Child_name).
+    case gen_server:call({global,Dst_pc},{transfer,Child_name,Data}) of
+        ok -> ets:delete(Ets_children,Child_name);
+        _  -> io:format("problem in transfer")
+   end.
 
 pc1(Child_name,CurX,CurY,East_border,South_border,Ets_children) ->
     case CurX > East_border andalso CurY > South_border of

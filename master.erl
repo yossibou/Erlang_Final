@@ -48,10 +48,10 @@ init([]) ->
     %host:start(pc3,{20,20},{10,20,10,20}),
     %host:start(pc4,{20,0},{10,20,0,10}),
     % start all servers
-    rpc:call(?PC1,host,start,[pc1,{0,0},{0,400,0,250}]),
-    rpc:call(?PC2,host,start,[pc2,{0,500},{0,400,250,500}]),
-    rpc:call(?PC3,host,start,[pc3,{800,500},{400,800,250,500}]),
-    rpc:call(?PC4,host,start,[pc4,{800,0},{400,800,0,250}]),
+    rpc:call(?PC1,host,start,[pc1,{0,0},{0,400,0,250},0]),
+    rpc:call(?PC2,host,start,[pc2,{0,500},{0,400,250,500},0]),
+    rpc:call(?PC3,host,start,[pc3,{800,500},{400,800,250,500},0]),
+    rpc:call(?PC4,host,start,[pc4,{800,0},{400,800,0,250},0]),
     spawn(gui,start,[]),
     Return = {ok, [],2000},
     Return.
@@ -75,6 +75,51 @@ handle_cast(Msg, []) ->
     %{Child_name,Data} = Msg,
     {noreply, [],2000}.
 
+handle_info({nodeup,PC},State)->
+  io:format("~p nodeup ~n",[PC]),
+  {noreply, State};
+
+handle_info({nodedown,PC},State)-> % if a node is down, check which PC, move responsibilities to different PC
+  io:format("~p nodedown ~n",[PC]),
+  case PC of
+    ?PC1 -> rpc:call(?PC2,host,start,[pc1,{0,0},{0,400,0,250},100]),
+            Function = fun(Child) ->
+                {Child_name,{_,{CurX,CurY},_}} = Child,
+                case CurX<400 andalso CurY<250 of
+                    true -> gen_server:call({global,pc1},{transfer,Child_name,[Child]});
+                    _    -> ok
+                end
+            end,
+            lists:foreach(Function, ets:tab2list(children));
+    ?PC2 -> rpc:call(?PC3,host,start,[pc2,{0,500},{0,400,250,500},100]),
+            Function = fun(Child) ->
+                {Child_name,{_,{CurX,CurY},_}} = Child,
+                case CurX<400 andalso CurY>250 of
+                    true -> gen_server:call({global,pc2},{transfer,Child_name,[Child]});
+                    _    -> ok
+                end
+            end,
+            lists:foreach(Function, ets:tab2list(children));
+    ?PC3 -> rpc:call(?PC4,host,start,[pc3,{800,500},{400,800,250,500},100]),
+            Function = fun(Child) ->
+                {Child_name,{_,{CurX,CurY},_}} = Child,
+                case CurX>400 andalso CurY>250 of
+                    true -> gen_server:call({global,pc3},{transfer,Child_name,[Child]});
+                    _    -> ok
+                end
+            end,
+            lists:foreach(Function, ets:tab2list(children));
+    ?PC4 -> rpc:call(?PC1,host,start,[pc4,{800,0},{400,800,0,250},100]),
+            Function = fun(Child) ->
+                {Child_name,{_,{CurX,CurY},_}} = Child,
+                case CurX>400 andalso CurY<250 of
+                    true -> gen_server:call({global,pc4},{transfer,Child_name,[Child]});
+                    _    -> ok
+                end
+            end,
+            lists:foreach(Function, ets:tab2list(children))
+  end,
+  {noreply, State};
 
 handle_info(_Info, []) ->
     %io:format("handle_call: ~p~n", [ets:tab2list(children)]),
