@@ -143,10 +143,12 @@ import_child(HostName,[{Child_name,{Destination,Position,Money}}]) ->
      %io:format("import ~p~p~n",[Position,Destination]),
      Ets_children=list_to_atom(lists:flatten(io_lib:format("~p_~p", [HostName,children]))),
      ets:insert(Ets_children,{Child_name,[{Destination,Position,Money}]}),
-     rpc:call(node(),child,start,[HostName,Child_name,Destination,Position,Money]).
+     io:format(" status ~p~n", [rpc:call(node(),child,start,[HostName,Child_name,Destination,Position,Money])]).
+
 
 handle_child_transfer(Child_name,Dst_pc,Ets_children)->
-    rpc:call(node(),child,stop,[Child_name]),
+    io:format(" status2 ~p~n", [rpc:call(node(),child,stop,[Child_name])]),
+
     Data = ets:lookup(Ets_children,Child_name),
     io:format("transfer: ~p to: ~p from: ~p data: ~p~n", [Child_name,Dst_pc,Ets_children,Data]),
     case gen_server:call({global,Dst_pc},{transfer,Child_name,Data}) of

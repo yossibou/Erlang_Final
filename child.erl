@@ -35,7 +35,7 @@ start(Father,Child_Name,Destination,Position,Money) ->
   gen_statem:start_link({global, Child_Name},?MODULE, [Father,Child_Name,Destination,Position,Money], []).
 
 stop(Name) ->
-  gen_statem:stop(Name).
+  gen_statem:stop({global,Name}).
 %%%===================================================================
 %%% gen_statem callbacks
 %%%===================================================================
@@ -50,7 +50,7 @@ init([Father,Child_Name,Destination,Position,Money]) ->
   ets:insert(Child_Name,{position,Position}),
   ets:insert(Child_Name,{destination, Destination}),
   ets:insert(Child_Name,{father, Father}),
-  %io:format("init ~p~p~n",[Position,Destination]),
+  io:format("init ~p~p~n",[Position,Destination]),
   {ok, walking, Child_Name}.
 
 %% @private
