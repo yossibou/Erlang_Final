@@ -143,7 +143,7 @@ import_child(HostName,[{Child_name,{Destination,Position,Money}}]) ->
      %io:format("import ~p~p~n",[Position,Destination]),
      Ets_children=list_to_atom(lists:flatten(io_lib:format("~p_~p", [HostName,children]))),
      ets:insert(Ets_children,{Child_name,[]}),
-     child:start(HostName,Child_name,Destination,Position,Money).
+     rpc:call(node(),child,start,[HostName,Child_name,Destination,Position,Money]).
 
 handle_child_transfer(Child_name,Dst_pc,Ets_children)->
     rpc:call(node(),child,stop,[Child_name]),

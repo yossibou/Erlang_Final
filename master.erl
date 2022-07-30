@@ -81,6 +81,8 @@ handle_info({nodedown,PC},State)-> % if a node is down, check which PC, move res
   case PC of
     ?PC1 -> rpc:call(?PC2,host,start,[pc1,{0,0},{0,400,0,250},100]),
             Function = fun(Child) ->
+                io:format("~p Child ~n",[Child]),
+                io:format("~p Child ~n",[Child]),
                 {Child_name,{_,{CurX,CurY},_}} = Child,
                 case CurX<400 andalso CurY<250 of
                     true -> gen_server:call({global,pc1},{transfer,Child_name,[Child]});
