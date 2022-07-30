@@ -1,12 +1,12 @@
 
--define(PC1, 'PC1@127.0.0.1').
--define(PC2, 'PC2@127.0.0.1').
--define(PC3, 'PC3@127.0.0.1').
--define(PC4, 'PC4@127.0.0.1').
--define(Master,'home@127.0.0.1').
+-define(PC1, 'PC1@192.168.31.92').
+-define(PC2, 'PC2@192.168.31.127').
+-define(PC3, 'PC3@192.168.31.127').
+-define(PC4, 'PC4@192.168.31.127').
+-define(Master,'home@192.168.31.127').
 
-%erl -setcookie dough -name Master@127.0.0.1
-%erl -setcookie dough -name PC1@127.0.0.1
-%erl -setcookie dough -name PC2@127.0.0.1
-%erl -setcookie dough -name PC3@127.0.0.1
-%erl -setcookie dough -name PC4@127.0.0.1
+%erl -setcookie dough -name Master@192.168.31.127
+%erl -setcookie dough -name PC1@192.168.31.127
+%erl -setcookie dough -name PC2@192.168.31.127
+%erl -setcookie dough -name PC3@192.168.31.127
+%erl -setcookie dough -name PC4@192.168.31.127
