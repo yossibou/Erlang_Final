@@ -12,6 +12,7 @@
 -module(host).
 -author("Yossi Bouskila, Tal Tubul").
 -behaviour(gen_server).
+-include("computers.hrl").
 -export([start/4,stop/1]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
@@ -26,6 +27,7 @@ start(HostName,Entrance,Borders,Count) ->
 stop(HostName) ->
   gen_server:stop({global, HostName}).
 init([HostName,Entrance,Borders,Count]) ->
+    connect_other_comp(HostName),
     Ets_children=list_to_atom(lists:flatten(io_lib:format("~p_~p", [HostName,children]))),
     ets:new(Ets_children,[set,named_table]),
     ets:new(HostName,[set,named_table]),
@@ -198,4 +200,44 @@ pc4(Child_name,CurX,CurY,West_border,South_border,Ets_children) ->
                     true ->  handle_child_transfer(Child_name,pc3,Ets_children);
                     _    -> ok
                 end
+    end.
+
+connect_other_comp(HostName)-> % connect all nodes
+    case HostName of
+        pc1 ->
+                net_kernel:connect_node(?MASTER),
+                timer:sleep(200),
+                net_kernel:connect_node(?PC2),
+                timer:sleep(200),
+                net_kernel:connect_node(?PC3),
+                timer:sleep(200),
+                net_kernel:connect_node(?PC4),
+                timer:sleep(200);
+        pc2 ->
+                net_kernel:connect_node(?PC1),
+                timer:sleep(200),
+                net_kernel:connect_node(?MASTER),
+                timer:sleep(200),
+                net_kernel:connect_node(?PC3),
+                timer:sleep(200),
+                net_kernel:connect_node(?PC4),
+                timer:sleep(200);
+        pc3 ->
+                net_kernel:connect_node(?PC1),
+                timer:sleep(200),
+                net_kernel:connect_node(?PC2),
+                timer:sleep(200),
+                net_kernel:connect_node(?MASTER),
+                timer:sleep(200),
+                net_kernel:connect_node(?PC4),
+                timer:sleep(200);
+        pc4 ->
+                net_kernel:connect_node(?PC1),
+                timer:sleep(200),
+                net_kernel:connect_node(?PC2),
+                timer:sleep(200),
+                net_kernel:connect_node(?PC3),
+                timer:sleep(200),
+                net_kernel:connect_node(?MASTER),
+                timer:sleep(200);
     end.

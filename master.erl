@@ -43,10 +43,7 @@ init([]) ->
     ets:new(children,[set,named_table]),
     ets:new(data,[set,named_table]),
     ets:insert(data,{children_count,0}),
-    %host:start(pc1,{0,0},{0,10,0,10}),
-    %host:start(pc2,{0,20},{0,10,10,20}),
-    %host:start(pc3,{20,20},{10,20,10,20}),
-    %host:start(pc4,{20,0},{10,20,0,10}),
+
     % start all servers
     rpc:call(?PC1,host,start,[pc1,{0,0},{0,400,0,250},0]),
     rpc:call(?PC2,host,start,[pc2,{0,500},{0,400,250,500},0]),
