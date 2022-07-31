@@ -28,6 +28,7 @@ stop(HostName) ->
   gen_server:stop({global, HostName}).
 init([HostName,Entrance,Borders,Count]) ->
     %connect_other_comp(HostName),
+    initRide(HostName),
     Ets_children=list_to_atom(lists:flatten(io_lib:format("~p_~p", [HostName,children]))),
     ets:new(Ets_children,[set,named_table]),
     ets:new(HostName,[set,named_table]),
@@ -60,6 +61,10 @@ handle_cast({children_count,Children_count}, HostName) ->
     %io:format("msg: ~p~n", [Children_count]),
     ets:insert(HostName,{total_child,Children_count}),
     {noreply, HostName,?STATUS_TIMEOUT};
+
+handle_cast({ride,Status}, HostName) ->
+  ets:insert(HostName,{ride,Status}),
+  {noreply, HostName,?STATUS_TIMEOUT};
 
 handle_cast(Msg, HostName) ->
     %io:format("msg: ~p~n", [Msg]),
@@ -245,3 +250,11 @@ connect_other_comp(HostName)-> % connect all nodes
                 net_kernel:connect_node(?MASTER),
                 timer:sleep(200)
     end.
+
+initRide(HostName)->
+  case HostName of
+    pc1 -> rpc:call(node(),ride,start,[HostName,open,ridePc1]);
+    pc2 -> rpc:call(node(),ride,start,[HostName,open,ridePc2]);
+    pc3 -> rpc:call(node(),ride,start,[HostName,open,ridePc3]);
+    pc4 -> rpc:call(node(),ride,start,[HostName,open,ridePc4])
+  end.
