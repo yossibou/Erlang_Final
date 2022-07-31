@@ -17,7 +17,7 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
 -define(STATUS_TIMEOUT, 50).
--define(MaxTotalChildren, 10).
+-define(MaxTotalChildren, 6).
 -define(RATE, 500). %STATUS_TIMEOUT*RATE
 
 start(HostName,Entrance,Borders,Count) ->
@@ -27,7 +27,7 @@ start(HostName,Entrance,Borders,Count) ->
 stop(HostName) ->
   gen_server:stop({global, HostName}).
 init([HostName,Entrance,Borders,Count]) ->
-    connect_other_comp(HostName),
+    %connect_other_comp(HostName),
     Ets_children=list_to_atom(lists:flatten(io_lib:format("~p_~p", [HostName,children]))),
     ets:new(Ets_children,[set,named_table]),
     ets:new(HostName,[set,named_table]),
@@ -39,6 +39,7 @@ init([HostName,Entrance,Borders,Count]) ->
     ets:insert(HostName,{south_border,South_border}),
     ets:insert(HostName,{north_border,North_border}),
     ets:insert(HostName,{children_count,Count}),
+    ets:insert(HostName,{ride,open}),
     ets:insert(HostName,{total_child,0}),
     io:format("ready"),
     Return = {ok, HostName,?STATUS_TIMEOUT},
@@ -135,7 +136,7 @@ new_child(HostName) ->
                      io:format("New child: ~p~n", [Children_count+1]);
                 _ -> ok
             end;
-        _ -> io:format("10 child ~n")
+        _ -> ok
     end.
 
 import_child(HostName,[{Child_name,{Destination,Position,Money}}]) ->
