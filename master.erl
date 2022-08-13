@@ -49,19 +49,20 @@ init([]) ->
     rpc:call(?PC2,host,start,[pc2,{0,500},{0,400,250,500},0]),
     rpc:call(?PC3,host,start,[pc3,{800,500},{400,800,250,500},0]),
     rpc:call(?PC4,host,start,[pc4,{800,0},{400,800,0,250},0]),
-    %spawn(gui,start,[]),
-    Return = {ok, [],2000},
+    spawn(gui,start,[]),
+    Return = {ok, []},
     Return.
 
 handle_call(Request, _From, []) ->
     Reply = ok,
     %io:format("handle_call: ~p~n", [Request]),
-    {reply, Reply, [],2000}.
+    {reply, Reply, []}.
 
 handle_cast(Msg, []) ->
     Function = fun({Child_name,Data}) -> ets:insert(children,{Child_name,Data}) end,
     lists:foreach(Function, Msg),
     Children_count = length(ets:tab2list(children)),
+    gen_server:cast({global,gui},refresh),
     ets:insert(data,{children_count,Children_count}),
     %io:format("children_count: ~p~n", [Children_count]),
     gen_server:cast({global,pc1},{children_count,Children_count}),
@@ -70,7 +71,7 @@ handle_cast(Msg, []) ->
     gen_server:cast({global,pc4},{children_count,Children_count}),
     %io:format("handle_call: ~p~n", [Msg]),
     %{Child_name,Data} = Msg,
-    {noreply, [],2000}.
+    {noreply, []}.
 
 handle_info({nodeup,PC},State)->
   io:format("~p nodeup ~n",[PC]),
@@ -122,7 +123,7 @@ handle_info({nodedown,PC},State)-> % if a node is down, check which PC, move res
 
 handle_info(_Info, []) ->
     %io:format("handle_call: ~p~n", [ets:tab2list(children)]),
-    {noreply, [],2000}.
+    {noreply, []}.
 
 terminate(_Reason, []) ->
     rpc:call(?PC1,host,stop,[pc1]),

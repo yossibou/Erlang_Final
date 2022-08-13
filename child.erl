@@ -138,7 +138,7 @@ on_ride(enter, _OldState, Data) ->
   [{_,Money}] = ets:lookup(Data,money),
   ets:update_element(Data,money,{2,Money-1}),
   enter_ride(Data),
-  {next_state, on_ride, Data, 3000};
+  {next_state, on_ride, Data, 30000};
 
 on_ride(timeout, _, Data) ->
   %io:format("finish_ride~n"),
@@ -182,7 +182,8 @@ enter_ride(Data)->
             1 -> Cur_pos = {474,387};
             2 -> Cur_pos = {534,390};
             3 -> Cur_pos = {677,199}
-         end
+         end;
+        _     -> Cur_pos ={DstX,DstY}
   end,
   gen_server:cast({global,Father},{Data,{{DstX,DstY},Cur_pos,Money}}).
 

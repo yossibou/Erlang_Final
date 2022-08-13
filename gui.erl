@@ -14,7 +14,7 @@
 -export([start/0,init/1,handle_event/2,handle_sync_event/3,handle_info/2,handle_cast/2]).
 -define(max_x, 800).
 -define(max_y,500).
--define(Timer,67).
+-define(Timer,1000).
 
 -define(SERVER, ?MODULE).
 -record(state, {frame, panel, dc, paint, list,bmpMap,bmpChild}).
@@ -24,10 +24,6 @@ start() ->
   wx_object:start({global,gui},?MODULE,[],[]).
 
 init([]) ->
-  ets:new(cars,[set,public,named_table]), % initialize car ets
-  ets:new(smoke,[set,public,named_table]),
-
-
   % graphics
   WxServer = wx:new(),
   Frame = wxFrame:new(WxServer, ?wxID_ANY, "MAP", [{size,{?max_x, ?max_y}}]),
@@ -37,18 +33,14 @@ init([]) ->
   % create bitmap to all images
   {BmpMap,BmpChild} = createBitMaps(),
 
-
   % connect panel
   wxFrame:show(Frame),
   erlang:send_after(?Timer, self(), timer),
 
-
-
-
   wxPanel:connect(Panel, paint, [callback]),
-  wxPanel:connect (Panel, left_down),
-  wxPanel:connect (Panel, right_down),
-  wxFrame:connect(Frame, close_window),
+  %wxPanel:connect (Panel, left_down),
+  %wxPanel:connect (Panel, right_down),
+  %wxFrame:connect(Frame, close_window),
 
   {Frame,#state{frame = Frame, panel = Panel, dc=DC, paint = Paint,
     bmpMap = BmpMap,bmpChild =BmpChild}}.
@@ -78,26 +70,17 @@ handle_sync_event(#wx{event=#wxPaint{}}, _,  _State = #state{
 handle_sync_event(_Event,_,State) ->
   {noreply, State}.
 
-
-%printCars('$end_of_table',_,_,_,_,_,_,_) -> ok; % this function paints all of the cars
-%printCars(Key,Panel,BmpCar1,BmpCar2,BmpCar3,BmpCar1b,BmpCar2b,BmpCar3b) ->
-%  [{_,[{A,B},D,_,Type,_],_,_,_,_,_,Nav}] = ets:lookup(cars,Key),
-
-
-
-
 handle_info(timer, State=#state{frame = Frame}) ->  % refresh screen for graphics
 
   wxWindow:refresh(Frame), % refresh screen
   erlang:send_after(?Timer,self(),timer),
-  {noreply, State};
-
-handle_info({nodeup,PC},State)->
-  io:format("~p nodeup ~n",[PC]),
   {noreply, State}.
 
-handle_cast(Msg, []) ->
-    {noreply,[]}.
+handle_cast(refresh, State=#state{frame = Frame}) ->
+  wxWindow:refresh(Frame), % refresh screen
+  erlang:send_after(?Timer,self(),timer),
+  {noreply, State}.
+
 
 createBitMaps() ->         % create bitmap to all images
   Map = wxImage:new("map.png"),
