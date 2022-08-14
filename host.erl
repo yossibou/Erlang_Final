@@ -22,7 +22,7 @@
 
 start(HostName,Entrance,Borders,Count) ->
     Return = gen_server:start_link({global, HostName}, ?MODULE, [HostName,Entrance,Borders,Count], []),
-    %io:format("start_link: ~p~n", [Return]),
+    io:format("start_link: ~p~n", [Return]),
     Return.
 stop(HostName) ->
   gen_server:stop({global, HostName}).
