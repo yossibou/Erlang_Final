@@ -21,11 +21,11 @@
 -define(RATE, 500). %STATUS_TIMEOUT*RATE
 
 start(HostName,Entrance,Borders,Count) ->
-    Return = gen_server:start_link({local, host}, ?MODULE, [HostName,Entrance,Borders,Count], []),
+    Return = gen_server:start_link({local, HostName}, ?MODULE, [HostName,Entrance,Borders,Count], []),
     io:format("start_link: ~p~n", [Return]),
     Return.
 stop(HostName) ->
-  gen_server:stop({local, host}).
+  gen_server:stop({local, HostName}).
 init([HostName,Entrance,Borders,Count]) ->
     %initRide(HostName),
     Ets_children=list_to_atom(lists:flatten(io_lib:format("~p_~p", [HostName,children]))),
@@ -66,7 +66,7 @@ handle_cast({ride,Status}, HostName) ->
   {noreply, HostName,?STATUS_TIMEOUT};
 
 handle_cast(Msg, HostName) ->
-    %io:format("msg: ~p~n", [Msg]),
+    io:format("msg: ~p~n", [Msg]),
     {Child_name,Data} = Msg,
     Ets_children=list_to_atom(lists:flatten(io_lib:format("~p_~p", [HostName,children]))),
     case [] =:= ets:lookup(Ets_children,Child_name) of
@@ -122,7 +122,7 @@ code_change(_OldVsn, State, _Extra) ->
 new_child(HostName) ->
     [{_,Total_child}] = ets:lookup(HostName,total_child),
     io:format("new_child-host: ~p~n", [Total_child]),
-    case  Total_child<?MaxTotalChildren of
+    case Total_child<?MaxTotalChildren of
         true ->
             case rand:uniform(?RATE) of
                 1 ->
@@ -137,7 +137,8 @@ new_child(HostName) ->
                      %io:format("New child: ~p~n", [Children_count+1]),
                      %%child:start(HostName,Child_name,Entrance,Entrance,Money),
                      %spawn(child,start,[HostName,Child_name,Entrance,Entrance,Money]),
-                     rpc:call(node(),child,start,[HostName,Child_name,Entrance,Entrance,Money]),
+                     %rpc:call(node(),child,start,[HostName,Child_name,Entrance,Entrance,Money]),
+                     spawn(child,start,[HostName,Child_name,Entrance,Entrance,Money]),
                      io:format("New child: ~p~n", [Children_count+1]);
                 _ -> ok
             end;
@@ -149,15 +150,18 @@ import_child(HostName,[{Child_name,{Destination,Position,Money}}]) ->
      %io:format("import ~p~p~n",[Position,Destination]),
      Ets_children=list_to_atom(lists:flatten(io_lib:format("~p_~p", [HostName,children]))),
      ets:insert(Ets_children,{Child_name,[{Destination,Position,Money}]}),
-     io:format(" status ~p~n", [rpc:call(node(),child,start,[HostName,Child_name,Destination,Position,Money])]).
+     io:format(" status ~p~n", [spawn(child,start,[HostName,Child_name,Destination,Position,Money])]).
+     %io:format(" status ~p~n", [rpc:call(node(),child,start,[HostName,Child_name,Destination,Position,Money])]).
 
 
 handle_child_transfer(Child_name,Dst_pc,Ets_children)->
-    io:format(" status2 ~p~n", [rpc:call(node(),child,stop,[Child_name])]),
+    %io:format(" status2 ~p~n", [rpc:call(node(),child,stop,[Child_name])]),
+    %io:format(" status2 ~p~n", [spawn(child,stop,[Child_name])]),
+    gen_server:cast({Child_name,node()},kill),
 
     Data = ets:lookup(Ets_children,Child_name),
     io:format("transfer: ~p to: ~p from: ~p data: ~p~n", [Child_name,Dst_pc,Ets_children,Data]),
-    case gen_server:call({host,Dst_pc},{transfer,Child_name,Data}) of
+    case gen_server:call({Dst_pc,Dst_pc},{transfer,Child_name,Data}) of
         ok -> ets:delete(Ets_children,Child_name);
         _  -> io:format("problem in transfer")
    end.
@@ -213,8 +217,12 @@ pc4(Child_name,CurX,CurY,West_border,South_border,Ets_children) ->
 
 initRide(HostName)->
   case HostName of
-    ?PC1 -> rpc:call(node(),ride,start,[HostName,open,ridePc1]);
-    ?PC2 -> rpc:call(node(),ride,start,[HostName,open,ridePc2]);
-    ?PC3 -> rpc:call(node(),ride,start,[HostName,open,ridePc3]);
-    ?PC4 -> rpc:call(node(),ride,start,[HostName,open,ridePc4])
+    %?PC1 -> rpc:call(node(),ride,start,[HostName,open,ridePc1]);
+    ?PC1 -> spawn(ride,start,[HostName,open,ridePc1]);
+    %?PC2 -> rpc:call(node(),ride,start,[HostName,open,ridePc2]);
+    ?PC2 -> spawn(ride,start,[HostName,open,ridePc2]);
+    %?PC3 -> rpc:call(node(),ride,start,[HostName,open,ridePc3]);
+    ?PC3 -> spawn(ride,start,[HostName,open,ridePc3]);
+    %?PC4 -> rpc:call(node(),ride,start,[HostName,open,ridePc4])
+    ?PC4 -> spawn(ride,start,[HostName,open,ridePc4])
   end.
