@@ -68,10 +68,10 @@ handle_cast(Msg, []) ->
     gen_server:cast({gui,?MASTER},refresh),
     ets:insert(data,{children_count,Children_count}),
     %io:format("children_count: ~p~n", [Children_count]),
-    gen_server:cast({host,?PC1},{children_count,Children_count}),
-    gen_server:cast({host,?PC2},{children_count,Children_count}),
-    gen_server:cast({host,?PC3},{children_count,Children_count}),
-    gen_server:cast({host,?PC4},{children_count,Children_count}),
+    gen_server:cast({?PC1,?PC1},{children_count,Children_count}),
+    gen_server:cast({?PC2,?PC2},{children_count,Children_count}),
+    gen_server:cast({?PC3,?PC3},{children_count,Children_count}),
+    gen_server:cast({?PC4,?PC4},{children_count,Children_count}),
     %io:format("handle_call: ~p~n", [Msg]),
     %{Child_name,Data} = Msg,
     {noreply, []}.
@@ -89,7 +89,7 @@ handle_info({nodedown,PC},State)-> % if a node is down, check which PC, move res
                 io:format("~p Child ~n",[Child]),
                 {Child_name,{_,{CurX,CurY},_}} = Child,
                 case CurX<400 andalso CurY<250 of
-                    true -> gen_server:call({host,?PC1},{transfer,Child_name,[Child]});
+                    true -> gen_server:call({?PC1,?PC2},{transfer,Child_name,[Child]});
                     _    -> ok
                 end
             end,
@@ -98,7 +98,7 @@ handle_info({nodedown,PC},State)-> % if a node is down, check which PC, move res
             Function = fun(Child) ->
                 {Child_name,{_,{CurX,CurY},_}} = Child,
                 case CurX<400 andalso CurY>250 of
-                    true -> gen_server:call({host,?PC2},{transfer,Child_name,[Child]});
+                    true -> gen_server:call({?PC2,?PC3},{transfer,Child_name,[Child]});
                     _    -> ok
                 end
             end,
@@ -107,7 +107,7 @@ handle_info({nodedown,PC},State)-> % if a node is down, check which PC, move res
             Function = fun(Child) ->
                 {Child_name,{_,{CurX,CurY},_}} = Child,
                 case CurX>400 andalso CurY>250 of
-                    true -> gen_server:call({host,?PC3},{transfer,Child_name,[Child]});
+                    true -> gen_server:call({?PC3,?PC4},{transfer,Child_name,[Child]});
                     _    -> ok
                 end
             end,
@@ -116,7 +116,7 @@ handle_info({nodedown,PC},State)-> % if a node is down, check which PC, move res
             Function = fun(Child) ->
                 {Child_name,{_,{CurX,CurY},_}} = Child,
                 case CurX>400 andalso CurY<250 of
-                    true -> gen_server:call({host,?PC4},{transfer,Child_name,[Child]});
+                    true -> gen_server:call({?PC4,?PC1},{transfer,Child_name,[Child]});
                     _    -> ok
                 end
             end,
@@ -129,10 +129,10 @@ handle_info(_Info, []) ->
     {noreply, []}.
 
 terminate(_Reason, []) ->
-    rpc:call(?PC1,host,stop,[?PC1]),
-    rpc:call(?PC2,host,stop,[?PC2]),
-    rpc:call(?PC3,host,stop,[?PC3]),
-    rpc:call(?PC4,host,stop,[?PC4]),
+    %rpc:call(?PC1,host,stop,[?PC1]),
+    %rpc:call(?PC2,host,stop,[?PC2]),
+    %rpc:call(?PC3,host,stop,[?PC3]),
+    %rpc:call(?PC4,host,stop,[?PC4]),
     ets:delete(data),
     ets:delete(children),
 
