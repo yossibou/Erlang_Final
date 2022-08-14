@@ -120,7 +120,7 @@ code_change(_OldVsn, State, _Extra) ->
 
 new_child(HostName) ->
     [{_,Total_child}] = ets:lookup(HostName,total_child),
-    %io:format("new_child-host: ~p~n", [Total_child]),
+    io:format("new_child-host: ~p~n", [Total_child]),
     case  Total_child<?MaxTotalChildren of
         true ->
             case rand:uniform(?RATE) of
