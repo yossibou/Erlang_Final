@@ -23,7 +23,7 @@
 start(HostName,Entrance,Borders,Count) ->
     Return = gen_server:start_link({local, HostName}, ?MODULE, [HostName,Entrance,Borders,Count], []),
     io:format("start_link: ~p~n", [Return]),
-    Return.
+    erlang:send_after(500,self(),trigger).
 stop(HostName) ->
   gen_server:stop({local, HostName}).
 init([HostName,Entrance,Borders,Count]) ->
@@ -95,13 +95,14 @@ handle_cast(Msg, HostName) ->
     {noreply, HostName,?STATUS_TIMEOUT}.
 
 
-handle_info(_Info, HostName) ->
+handle_info(trigger, HostName) ->
     gen_server:cast({?MASTER,?MASTER},{msg}),
     new_child(HostName),
     Ets_children=list_to_atom(lists:flatten(io_lib:format("~p_~p", [HostName,children]))),
     Children = ets:tab2list(Ets_children),
     gen_server:cast({master,?MASTER},Children),
     %io:format("handle_call-host: ~p~n", [Children]),
+    erlang:send_after(500,self(),trigger),
     {noreply, HostName,?STATUS_TIMEOUT}.
 
 terminate(_Reason, HostName) ->
