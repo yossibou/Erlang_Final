@@ -27,7 +27,7 @@ start(HostName,Entrance,Borders,Count) ->
 stop(HostName) ->
   gen_server:stop({local, HostName}).
 init([HostName,Entrance,Borders,Count]) ->
-    initRide(HostName),
+    %initRide(HostName),
     Ets_children=list_to_atom(lists:flatten(io_lib:format("~p_~p", [HostName,children]))),
     ets:new(Ets_children,[set,named_table]),
     ets:new(HostName,[set,named_table]),
