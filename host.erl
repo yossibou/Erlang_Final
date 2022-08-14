@@ -42,7 +42,7 @@ init([HostName,Entrance,Borders,Count]) ->
     ets:insert(HostName,{ride,open}),
     ets:insert(HostName,{total_child,0}),
     io:format("ready"),
-    Return = {ok, HostName,?STATUS_TIMEOUT},
+    Return = {ok, HostName,1000},
     Return.
 
 handle_call({transfer,_,Data}, _From, HostName) ->
