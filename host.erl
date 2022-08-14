@@ -21,11 +21,11 @@
 -define(RATE, 500). %STATUS_TIMEOUT*RATE
 
 start(HostName,Entrance,Borders,Count) ->
-    Return = gen_server:start_link({local, HostName}, ?MODULE, [HostName,Entrance,Borders,Count], []),
+    Return = gen_server:start_link({local, host}, ?MODULE, [HostName,Entrance,Borders,Count], []),
     io:format("start_link: ~p~n", [Return]),
     Return.
 stop(HostName) ->
-  gen_server:stop({local, HostName}).
+  gen_server:stop({local, host}).
 init([HostName,Entrance,Borders,Count]) ->
     %initRide(HostName),
     Ets_children=list_to_atom(lists:flatten(io_lib:format("~p_~p", [HostName,children]))),
@@ -100,7 +100,7 @@ handle_info(_Info, HostName) ->
     new_child(HostName),
     Ets_children=list_to_atom(lists:flatten(io_lib:format("~p_~p", [HostName,children]))),
     Children = ets:tab2list(Ets_children),
-    gen_server:cast({local,?MASTER},Children),
+    gen_server:cast({master,?MASTER},Children),
     %io:format("handle_call-host: ~p~n", [Children]),
     {noreply, HostName,?STATUS_TIMEOUT}.
 
@@ -157,7 +157,7 @@ handle_child_transfer(Child_name,Dst_pc,Ets_children)->
 
     Data = ets:lookup(Ets_children,Child_name),
     io:format("transfer: ~p to: ~p from: ~p data: ~p~n", [Child_name,Dst_pc,Ets_children,Data]),
-    case gen_server:call({local,Dst_pc},{transfer,Child_name,Data}) of
+    case gen_server:call({host,Dst_pc},{transfer,Child_name,Data}) of
         ok -> ets:delete(Ets_children,Child_name);
         _  -> io:format("problem in transfer")
    end.
