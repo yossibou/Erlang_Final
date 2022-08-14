@@ -156,7 +156,7 @@ handle_child_transfer(Child_name,Dst_pc,Ets_children)->
 
     Data = ets:lookup(Ets_children,Child_name),
     io:format("transfer: ~p to: ~p from: ~p data: ~p~n", [Child_name,Dst_pc,Ets_children,Data]),
-    case gen_server:call({global,Dst_pc},{transfer,Child_name,Data}) of
+    case gen_server:call({local,Dst_pc},{transfer,Child_name,Data}) of
         ok -> ets:delete(Ets_children,Child_name);
         _  -> io:format("problem in transfer")
    end.
