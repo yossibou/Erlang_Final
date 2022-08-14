@@ -21,11 +21,11 @@
 -define(RATE, 500). %STATUS_TIMEOUT*RATE
 
 start(HostName,Entrance,Borders,Count) ->
-    Return = gen_server:start_link({global, HostName}, ?MODULE, [HostName,Entrance,Borders,Count], []),
+    Return = gen_server:start_link({local, HostName}, ?MODULE, [HostName,Entrance,Borders,Count], []),
     io:format("start_link: ~p~n", [Return]),
     Return.
 stop(HostName) ->
-  gen_server:stop({global, HostName}).
+  gen_server:stop({local, HostName}).
 init([HostName,Entrance,Borders,Count]) ->
     initRide(HostName),
     Ets_children=list_to_atom(lists:flatten(io_lib:format("~p_~p", [HostName,children]))),
@@ -99,7 +99,7 @@ handle_info(_Info, HostName) ->
     new_child(HostName),
     Ets_children=list_to_atom(lists:flatten(io_lib:format("~p_~p", [HostName,children]))),
     Children = ets:tab2list(Ets_children),
-    gen_server:cast({global,?MASTER},Children),
+    gen_server:cast({local,?MASTER},Children),
     %io:format("handle_call-host: ~p~n", [Children]),
     {noreply, HostName,?STATUS_TIMEOUT}.
 
@@ -212,8 +212,8 @@ pc4(Child_name,CurX,CurY,West_border,South_border,Ets_children) ->
 
 initRide(HostName)->
   case HostName of
-    pc1 -> rpc:call(node(),ride,start,[HostName,open,ridePc1]);
-    pc2 -> rpc:call(node(),ride,start,[HostName,open,ridePc2]);
-    pc3 -> rpc:call(node(),ride,start,[HostName,open,ridePc3]);
-    pc4 -> rpc:call(node(),ride,start,[HostName,open,ridePc4])
+    ?PC1 -> rpc:call(node(),ride,start,[HostName,open,ridePc1]);
+    ?PC2 -> rpc:call(node(),ride,start,[HostName,open,ridePc2]);
+    ?PC3 -> rpc:call(node(),ride,start,[HostName,open,ridePc3]);
+    ?PC4 -> rpc:call(node(),ride,start,[HostName,open,ridePc4])
   end.
