@@ -29,10 +29,10 @@
 %% function does not return until Module:init/1 has returned.
 
 start(Father,Child_Name,Destination,Position,Money) ->
-  gen_statem:start_link({global, Child_Name},?MODULE, [Father,Child_Name,Destination,Position,Money], []).
+  gen_statem:start_link({local, Child_Name},?MODULE, [Father,Child_Name,Destination,Position,Money], []).
 
 stop(Name) ->
-  gen_statem:stop({global,Name}).
+  gen_statem:stop({local,Name}).
 %%%===================================================================
 %%% gen_statem callbacks
 %%%===================================================================
@@ -98,7 +98,7 @@ walking(timeout, _, Data) ->
     false -> {DstX,DstY} = {0,0}
   end,
   [{_,Father}] = ets:lookup(Data,father),
-  gen_server:cast({global,Father},{Data,{{DstX,DstY},{CurX,CurY},Money}}),
+  gen_server:cast({local,Father},{Data,{{DstX,DstY},{CurX,CurY},Money}}),
 
   case CurX =:= DstX andalso CurY =:= DstY of
     false ->
@@ -145,7 +145,7 @@ on_ride(timeout, _, Data) ->
   [{_,{DstX,DstY}}] = ets:lookup(Data,destination),
   [{_,Father}] = ets:lookup(Data,father),
   [{_,Money}] = ets:lookup(Data,money),
-  gen_server:cast({global,Father},{Data,{{DstX,DstY},{DstX,DstY},Money}}),
+  gen_server:cast({local,Father},{Data,{{DstX,DstY},{DstX,DstY},Money}}),
   {next_state, walking, Data}.
 
 %% @private
@@ -185,5 +185,5 @@ enter_ride(Data)->
          end;
         _     -> Cur_pos ={DstX,DstY}
   end,
-  gen_server:cast({global,Father},{Data,{{DstX,DstY},Cur_pos,Money}}).
+  gen_server:cast({local,Father},{Data,{{DstX,DstY},Cur_pos,Money}}).
 
