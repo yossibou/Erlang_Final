@@ -58,6 +58,9 @@ handle_call(Request, _From, []) ->
     %io:format("handle_call: ~p~n", [Request]),
     {reply, Reply, []}.
 
+handle_cast({msg}, []) ->
+    io:format("msgmsg ~n"),     
+    {noreply, []};    
 handle_cast(Msg, []) ->
     Function = fun({Child_name,Data}) -> ets:insert(children,{Child_name,Data}) end,
     lists:foreach(Function, Msg),
