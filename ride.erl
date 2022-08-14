@@ -27,10 +27,10 @@
 %% function does not return until Module:init/1 has returned.
 
 start(Father,Status,RideName) ->
-  gen_statem:start_link({global, RideName},?MODULE, [Father,Status], []).
+  gen_statem:start_link({local, RideName},?MODULE, [Father,Status], []).
 
 stop(RideName) ->
-  gen_statem:stop({global,RideName}).
+  gen_statem:stop({local,RideName}).
 %%%===================================================================
 %%% gen_statem callbacks
 %%%===================================================================
@@ -62,14 +62,14 @@ format_status(_Opt, [_PDict, _StateName, _State]) ->
 %% call/2, cast/2, or as a normal process message.
 
 open(enter, _OldState, Father) ->
-  gen_server:cast({global,Father},{ride,open}),
+  gen_server:cast({local,Father},{ride,open}),
   {next_state, open, Father, 2000};
 
 open(timeout, _, Data) ->
     {next_state, work, Data}.
 
 work(enter, _OldState, Father) ->
-  gen_server:cast({global,Father},{ride,work}),
+  gen_server:cast({local,Father},{ride,work}),
   {next_state, work, Father, 10000};
 work(timeout, _, Data) ->
   case rand:uniform(10)>9 of
@@ -78,7 +78,7 @@ work(timeout, _, Data) ->
   end.
 
 maintenance(enter, _OldState, Father) ->
-  gen_server:cast({global,Father},{ride,maintenance}),
+  gen_server:cast({local,Father},{ride,maintenance}),
   {next_state, maintenance, Father, 10000};
 maintenance(timeout, _, Data) ->
   {next_state, open, Data}.
