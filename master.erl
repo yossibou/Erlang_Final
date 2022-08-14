@@ -17,11 +17,11 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
 start() ->
-    Return = gen_server:start_link({local, master}, ?MODULE, [], []),
+    Return = gen_server:start_link({local, ?MASTER}, ?MODULE, [], []),
     Return.
 stop() ->
 
-  gen_server:stop({local, master}).
+  gen_server:stop({local, ?MASTER}).
 init([]) ->
 
     net_kernel:monitor_nodes(true), % monitor nodes
