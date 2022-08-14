@@ -62,14 +62,14 @@ format_status(_Opt, [_PDict, _StateName, _State]) ->
 %% call/2, cast/2, or as a normal process message.
 
 open(enter, _OldState, Father) ->
-  gen_server:cast({local,Father},{ride,open}),
+  gen_server:cast({Father,Father},{ride,open}),
   {next_state, open, Father, 2000};
 
 open(timeout, _, Data) ->
     {next_state, work, Data}.
 
 work(enter, _OldState, Father) ->
-  gen_server:cast({local,Father},{ride,work}),
+  gen_server:cast({Father,Father},{ride,work}),
   {next_state, work, Father, 10000};
 work(timeout, _, Data) ->
   case rand:uniform(10)>9 of
@@ -78,7 +78,7 @@ work(timeout, _, Data) ->
   end.
 
 maintenance(enter, _OldState, Father) ->
-  gen_server:cast({local,Father},{ride,maintenance}),
+  gen_server:cast({Father,Father},{ride,maintenance}),
   {next_state, maintenance, Father, 10000};
 maintenance(timeout, _, Data) ->
   {next_state, open, Data}.
