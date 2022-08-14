@@ -50,7 +50,7 @@ init([]) ->
     rpc:call(?PC3,host,start,[?PC3,{800,500},{400,800,250,500},0]),
     rpc:call(?PC4,host,start,[?PC4,{800,0},{400,800,0,250},0]),
     %spawn(gui,start,[]),
-    Return = {ok, []},
+    Return = {ok, [],500},
     Return.
 
 handle_call(Request, _From, []) ->
@@ -125,8 +125,8 @@ handle_info({nodedown,PC},State)-> % if a node is down, check which PC, move res
   {noreply, State};
 
 handle_info(_Info, []) ->
-    %io:format("handle_call: ~p~n", [ets:tab2list(children)]),
-    {noreply, []}.
+    io:format("handle_call: ~p~n", [ets:tab2list(children)]),
+    {noreply, [],1000}.
 
 terminate(_Reason, []) ->
     %rpc:call(?PC1,host,stop,[?PC1]),
