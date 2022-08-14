@@ -96,7 +96,7 @@ handle_cast(Msg, HostName) ->
 
 
 handle_info(_Info, HostName) ->
-    io:format("handle_info~n"),
+    gen_server:cast({master,?MASTER},{msg}),
     new_child(HostName),
     Ets_children=list_to_atom(lists:flatten(io_lib:format("~p_~p", [HostName,children]))),
     Children = ets:tab2list(Ets_children),
