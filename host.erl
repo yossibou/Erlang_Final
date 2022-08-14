@@ -83,10 +83,10 @@ handle_cast(Msg, HostName) ->
                 false ->
                     ets:update_element(Ets_children,Child_name,{2, Data}),
                     case HostName of
-                        pc1 -> pc1(Child_name,CurX,CurY,East_border,South_border,Ets_children);
-                        pc2 -> pc2(Child_name,CurX,CurY,East_border,North_border,Ets_children);
-                        pc3 -> pc3(Child_name,CurX,CurY,West_border,North_border,Ets_children);
-                        pc4 -> pc4(Child_name,CurX,CurY,West_border,South_border,Ets_children)
+                        ?PC1 -> pc1(Child_name,CurX,CurY,East_border,South_border,Ets_children);
+                        ?PC2 -> pc2(Child_name,CurX,CurY,East_border,North_border,Ets_children);
+                        ?PC3 -> pc3(Child_name,CurX,CurY,West_border,North_border,Ets_children);
+                        ?PC4 -> pc4(Child_name,CurX,CurY,West_border,South_border,Ets_children)
                     end
             end;
 
@@ -99,7 +99,7 @@ handle_info(_Info, HostName) ->
     new_child(HostName),
     Ets_children=list_to_atom(lists:flatten(io_lib:format("~p_~p", [HostName,children]))),
     Children = ets:tab2list(Ets_children),
-    gen_server:cast({global,master},Children),
+    gen_server:cast({global,?MASTER},Children),
     %io:format("handle_call-host: ~p~n", [Children]),
     {noreply, HostName,?STATUS_TIMEOUT}.
 
@@ -163,49 +163,49 @@ handle_child_transfer(Child_name,Dst_pc,Ets_children)->
 
 pc1(Child_name,CurX,CurY,East_border,South_border,Ets_children) ->
     case CurX > East_border andalso CurY > South_border of
-        true ->  handle_child_transfer(Child_name,pc3,Ets_children);
+        true ->  handle_child_transfer(Child_name,?PC3,Ets_children);
         _    -> case CurX > East_border of
-                    true -> handle_child_transfer(Child_name,pc4,Ets_children);
+                    true -> handle_child_transfer(Child_name,?PC4,Ets_children);
                     _    -> ok
                 end,
                 case CurY > South_border  of
-                    true ->  handle_child_transfer(Child_name,pc2,Ets_children);
+                    true ->  handle_child_transfer(Child_name,?PC2,Ets_children);
                     _    -> ok
                 end
     end.
 pc2(Child_name,CurX,CurY,East_border,North_border,Ets_children) ->
     case CurX > East_border andalso CurY < North_border of
-        true ->  handle_child_transfer(Child_name,pc4,Ets_children);
+        true ->  handle_child_transfer(Child_name,?PC4,Ets_children);
         _    -> case CurX > East_border of
-                    true -> handle_child_transfer(Child_name,pc3,Ets_children);
+                    true -> handle_child_transfer(Child_name,?PC3,Ets_children);
                     _    -> ok
                 end,
                 case CurY < North_border  of
-                    true ->  handle_child_transfer(Child_name,pc1,Ets_children);
+                    true ->  handle_child_transfer(Child_name,?PC1,Ets_children);
                     _    -> ok
                 end
     end.
 pc3(Child_name,CurX,CurY,West_border,North_border,Ets_children) ->
     case CurX < West_border andalso CurY < North_border of
-        true ->  handle_child_transfer(Child_name,pc1,Ets_children);
+        true ->  handle_child_transfer(Child_name,?PC1,Ets_children);
         _    -> case CurX < West_border of
-                    true -> handle_child_transfer(Child_name,pc2,Ets_children);
+                    true -> handle_child_transfer(Child_name,?PC2,Ets_children);
                     _    -> ok
                 end,
                 case CurY < North_border  of
-                    true ->  handle_child_transfer(Child_name,pc4,Ets_children);
+                    true ->  handle_child_transfer(Child_name,?PC4,Ets_children);
                     _    -> ok
                 end
     end.
 pc4(Child_name,CurX,CurY,West_border,South_border,Ets_children) ->
     case CurX < West_border andalso CurY > South_border of
-        true ->  handle_child_transfer(Child_name,pc2,Ets_children);
+        true ->  handle_child_transfer(Child_name,?PC2,Ets_children);
         _    -> case CurX < West_border of
-                    true -> handle_child_transfer(Child_name,pc1,Ets_children);
+                    true -> handle_child_transfer(Child_name,?PC1,Ets_children);
                     _    -> ok
                 end,
                 case CurY > South_border  of
-                    true ->  handle_child_transfer(Child_name,pc3,Ets_children);
+                    true ->  handle_child_transfer(Child_name,?PC3,Ets_children);
                     _    -> ok
                 end
     end.
