@@ -49,7 +49,7 @@ init([]) ->
     rpc:call(?PC2,host,start,[pc2,{0,500},{0,400,250,500},0]),
     rpc:call(?PC3,host,start,[pc3,{800,500},{400,800,250,500},0]),
     rpc:call(?PC4,host,start,[pc4,{800,0},{400,800,0,250},0]),
-    spawn(gui,start,[]),
+    %spawn(gui,start,[]),
     Return = {ok, []},
     Return.
 
