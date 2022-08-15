@@ -52,7 +52,7 @@ handle_call({transfer,_,Data}, _From, HostName) ->
 
 handle_cast({transfer,_,Data}, HostName) ->
     import_child(HostName,Data),
-    io:format("handle_call: ~p~n", [Data]),
+    io:format("get transfer msg: ~p~n", [Data]),
     {noreply, HostName};
 
 handle_cast({children_count,Children_count}, HostName) ->
@@ -74,7 +74,6 @@ handle_cast(trigger, HostName) ->
     {noreply, HostName};
 
 handle_cast(Msg, HostName) ->
-    io:format("msg: ~p~n", [Msg]),
     {Child_name,Data} = Msg,
     Ets_children=list_to_atom(lists:flatten(io_lib:format("~p_~p", [HostName,children]))),
     case [] =:= ets:lookup(Ets_children,Child_name) of
@@ -119,7 +118,6 @@ code_change(_OldVsn, State, _Extra) ->
 
 new_child(HostName) ->
     [{_,Total_child}] = ets:lookup(HostName,total_child),
-    io:format("new_child-host: ~p~n", [Total_child]),
     case Total_child<?MaxTotalChildren of
         true ->
             case rand:uniform(?RATE) of
@@ -141,7 +139,7 @@ new_child(HostName) ->
 import_child(HostName,[{Child_name,{Destination,Position,Money}}]) ->
      Ets_children=list_to_atom(lists:flatten(io_lib:format("~p_~p", [HostName,children]))),
      ets:insert(Ets_children,{Child_name,[{Destination,Position,Money}]}),
-     io:format(" status ~p~n", [spawn(child,start,[HostName,Child_name,Destination,Position,Money])]).
+     io:format(" import ~p~n", [spawn(child,start,[HostName,Child_name,Destination,Position,Money])]).
 
 
 handle_child_transfer(Child_name,Dst_pc,Ets_children)->
