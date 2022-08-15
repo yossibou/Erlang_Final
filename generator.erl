@@ -15,7 +15,7 @@
 -export([start/0,stop/1]).
 
 %% gen_statem callbacks
--export([init/1, terminate/3, callback_mode/0]).
+-export([init/0, terminate/3, callback_mode/0]).
 -define(REFRESH, 50).
 
 
@@ -48,8 +48,8 @@ init() ->
 %% the callback mode of the callback module.
 callback_mode() -> [state_functions,state_enter].
 
-main(enter, _OldState, Data) ->
-  {next_state, main, Data, ?REFRESH};
+main(enter, _OldState, _) ->
+  {next_state, main, _, ?REFRESH};
 
 main(timeout, _, Data) ->
   gen_server:cast({?PC1,?PC1},trigger),
@@ -63,5 +63,5 @@ main(timeout, _, Data) ->
 %% terminate. It should be the opposite of Module:init/1 and do any
 %% necessary cleaning up. When it returns, the gen_statem terminates with
 %% Reason. The return value is ignored.
-terminate(_Reason, _StateName, Data ) ->
+terminate(_Reason, _StateName, _ ) ->
   ok.
