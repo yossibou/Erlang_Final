@@ -23,7 +23,7 @@
 start(HostName,Entrance,Borders,Count) ->
     Return = gen_server:start_link({local, HostName}, ?MODULE, [HostName,Entrance,Borders,Count], []),
     io:format("start_link: ~p~n", [Return]),
-    erlang:send_after(500,self(),trigger).
+    Return.
 stop(HostName) ->
   gen_server:stop({local, HostName}).
 init([HostName,Entrance,Borders,Count]) ->
@@ -42,28 +42,28 @@ init([HostName,Entrance,Borders,Count]) ->
     ets:insert(HostName,{ride,open}),
     ets:insert(HostName,{total_child,0}),
     io:format("ready"),
-    Return = {ok, HostName,1000},
+    Return = {ok, HostName},
     Return.
 
 handle_call({transfer,_,Data}, _From, HostName) ->
     import_child(HostName,Data),
     Reply = ok,
     io:format("handle_call: ~p~n", [Data]),
-    {reply, Reply, HostName,?STATUS_TIMEOUT}.
+    {reply, Reply, HostName}.
 
 handle_cast({transfer,_,Data}, HostName) ->
     import_child(HostName,Data),
     io:format("handle_call: ~p~n", [Data]),
-    {noreply, HostName,?STATUS_TIMEOUT};
+    {noreply, HostName};
 
 handle_cast({children_count,Children_count}, HostName) ->
     %io:format("msg: ~p~n", [Children_count]),
     ets:insert(HostName,{total_child,Children_count}),
-    {noreply, HostName,?STATUS_TIMEOUT};
+    {noreply, HostName};
 
 handle_cast({ride,Status}, HostName) ->
   ets:insert(HostName,{ride,Status}),
-  {noreply, HostName,?STATUS_TIMEOUT};
+  {noreply, HostName};
 
 handle_cast(Msg, HostName) ->
     io:format("msg: ~p~n", [Msg]),
@@ -92,18 +92,17 @@ handle_cast(Msg, HostName) ->
 
         _ -> nothing
     end,
-    {noreply, HostName,?STATUS_TIMEOUT}.
+    {noreply, HostName};
 
 
-handle_info(trigger, HostName) ->
+handle_cast(trigger, HostName) ->
     gen_server:cast({?MASTER,?MASTER},{msg}),
     new_child(HostName),
     Ets_children=list_to_atom(lists:flatten(io_lib:format("~p_~p", [HostName,children]))),
     Children = ets:tab2list(Ets_children),
     gen_server:cast({master,?MASTER},Children),
     %io:format("handle_call-host: ~p~n", [Children]),
-    erlang:send_after(500,self(),trigger),
-    {noreply, HostName,?STATUS_TIMEOUT}.
+    {noreply, HostName}.
 
 terminate(_Reason, HostName) ->
     Ets_children=list_to_atom(lists:flatten(io_lib:format("~p_~p", [HostName,children]))),
