@@ -45,10 +45,10 @@ init([]) ->
     ets:insert(data,{children_count,0}),
 
     % start all servers
-    rpc:call(?PC1,host,start,[?PC1,{0,0},{0,400,0,250},0]),
-    rpc:call(?PC2,host,start,[?PC2,{0,500},{0,400,250,500},0]),
-    rpc:call(?PC3,host,start,[?PC3,{800,500},{400,800,250,500},0]),
-    rpc:call(?PC4,host,start,[?PC4,{800,0},{400,800,0,250},0]),
+    erpc:call(?PC1,host,start,[?PC1,{0,0},{0,400,0,250},0]),
+    erpc:call(?PC2,host,start,[?PC2,{0,500},{0,400,250,500},0]),
+    erpc:call(?PC3,host,start,[?PC3,{800,500},{400,800,250,500},0]),
+    erpc:call(?PC4,host,start,[?PC4,{800,0},{400,800,0,250},0]),
     %spawn(gui,start,[]),
     spawn(generator,start,[]),
     Return = {ok, []},
@@ -84,7 +84,7 @@ handle_info({nodeup,PC},State)->
 handle_info({nodedown,PC},State)-> % if a node is down, check which PC, move responsibilities to different PC
   io:format("~p nodedown ~n",[PC]),
   case PC of
-    ?PC1 -> rpc:call(?PC2,host,start,[?PC1,{0,0},{0,400,0,250},100]),
+    ?PC1 -> erpc:call(?PC2,host,start,[?PC1,{0,0},{0,400,0,250},100]),
             Function = fun(Child) ->
                 io:format("~p Child ~n",[Child]),
                 io:format("~p Child ~n",[Child]),
@@ -95,7 +95,7 @@ handle_info({nodedown,PC},State)-> % if a node is down, check which PC, move res
                 end
             end,
             lists:foreach(Function, ets:tab2list(children));
-    ?PC2 -> rpc:call(?PC3,host,start,[?PC2,{0,500},{0,400,250,500},100]),
+    ?PC2 -> erpc:call(?PC3,host,start,[?PC2,{0,500},{0,400,250,500},100]),
             Function = fun(Child) ->
                 {Child_name,{_,{CurX,CurY},_}} = Child,
                 case CurX<400 andalso CurY>250 of
@@ -104,7 +104,7 @@ handle_info({nodedown,PC},State)-> % if a node is down, check which PC, move res
                 end
             end,
             lists:foreach(Function, ets:tab2list(children));
-    ?PC3 -> rpc:call(?PC4,host,start,[?PC3,{800,500},{400,800,250,500},100]),
+    ?PC3 -> erpc:call(?PC4,host,start,[?PC3,{800,500},{400,800,250,500},100]),
             Function = fun(Child) ->
                 {Child_name,{_,{CurX,CurY},_}} = Child,
                 case CurX>400 andalso CurY>250 of
@@ -113,7 +113,7 @@ handle_info({nodedown,PC},State)-> % if a node is down, check which PC, move res
                 end
             end,
             lists:foreach(Function, ets:tab2list(children));
-    ?PC4 -> rpc:call(?PC1,host,start,[?PC4,{800,0},{400,800,0,250},100]),
+    ?PC4 -> erpc:call(?PC1,host,start,[?PC4,{800,0},{400,800,0,250},100]),
             Function = fun(Child) ->
                 {Child_name,{_,{CurX,CurY},_}} = Child,
                 case CurX>400 andalso CurY<250 of
