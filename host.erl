@@ -146,7 +146,7 @@ handle_child_transfer(Child_name,Dst_pc,Ets_children)->
     exit(whereis(Child_name),kill),
     Data = ets:lookup(Ets_children,Child_name),
     io:format("transfer: ~p to: ~p from: ~p data: ~p~n", [Child_name,Dst_pc,Ets_children,Data]),
-    gen_server:cast({Dst_pc,Dst_pc},{transfer,Child_name,Data})
+    gen_server:cast({Dst_pc,Dst_pc},{transfer,Child_name,Data}),
     ets:delete(Ets_children,Child_name).
 
 pc1(Child_name,CurX,CurY,East_border,South_border,Ets_children) ->
