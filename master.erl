@@ -63,8 +63,7 @@ handle_call(Request, _From, []) ->
     %io:format("handle_call: ~p~n", [Request]),
     {reply, Reply, []}.
 
-handle_cast({msg}, []) ->
-    io:format("msgmsg ~n"),     
+handle_cast({msg}, []) ->   
     {noreply, []};    
 handle_cast(Msg, []) ->
     Function = fun({Child_name,Data}) -> ets:insert(children,{Child_name,Data}) end,
@@ -90,8 +89,6 @@ handle_info({nodedown,PC},State)-> % if a node is down, check which PC, move res
   case PC of
     ?PC1 -> erpc:call(?PC2,host,start,[?PC1,{0,0},{0,400,0,250},100]),
             Function = fun(Child) ->
-                io:format("~p Child ~n",[Child]),
-                io:format("~p Child ~n",[Child]),
                 {Child_name,{_,{CurX,CurY},_}} = Child,
                 case CurX<400 andalso CurY<250 of
                     true -> gen_server:call({?PC1,?PC2},{transfer,Child_name,[Child]});
