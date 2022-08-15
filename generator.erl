@@ -12,7 +12,7 @@
 -behaviour(gen_statem).
 
 %% API
--export([start/0,stop/1]).
+-export([start/0,stop/0]).
 
 %% gen_statem callbacks
 -export([init/1, terminate/3, callback_mode/0, main/3]).
@@ -30,8 +30,8 @@
 start() ->
   gen_statem:start_link({local, generator},?MODULE, [], []).
 
-stop(Name) ->
-  gen_statem:stop({local,Name}).
+stop() ->
+  gen_statem:stop(?MODULE).
 %%%===================================================================
 %%% gen_statem callbacks
 %%%===================================================================
