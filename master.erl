@@ -45,13 +45,13 @@ init([]) ->
     ets:insert(data,{children_count,0}),
 
     % start all servers
-    erpc:call(?PC1,host,start,[?PC1,{0,0},{0,400,0,250},0]),
+    erpc:cast(?PC1,host,start,[?PC1,{0,0},{0,400,0,250},0]),
     timer:sleep(200),
-    erpc:call(?PC2,host,start,[?PC2,{0,500},{0,400,250,500},0]),
+    erpc:cast(?PC2,host,start,[?PC2,{0,500},{0,400,250,500},0]),
     timer:sleep(200),
-    erpc:call(?PC3,host,start,[?PC3,{800,500},{400,800,250,500},0]),
+    erpc:cast(?PC3,host,start,[?PC3,{800,500},{400,800,250,500},0]),
     timer:sleep(200),
-    erpc:call(?PC4,host,start,[?PC4,{800,0},{400,800,0,250},0]),
+    erpc:cast(?PC4,host,start,[?PC4,{800,0},{400,800,0,250},0]),
     timer:sleep(200),
     %spawn(gui,start,[]),
     spawn(generator,start,[]),
