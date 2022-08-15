@@ -15,7 +15,7 @@
 -export([start/0,stop/1]).
 
 %% gen_statem callbacks
--export([init/1, terminate/3, callback_mode/0]).
+-export([init/1, terminate/3, callback_mode/0, main/3]).
 -define(REFRESH, 50).
 
 
