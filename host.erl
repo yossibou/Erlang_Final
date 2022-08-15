@@ -18,7 +18,7 @@
          terminate/2, code_change/3]).
 -define(STATUS_TIMEOUT, 50).
 -define(MaxTotalChildren, 6).
--define(RATE, 500). %STATUS_TIMEOUT*RATE
+-define(RATE, 2). %STATUS_TIMEOUT*RATE
 
 start(HostName,Entrance,Borders,Count) ->
     Return = gen_server:start_link({local, HostName}, ?MODULE, [HostName,Entrance,Borders,Count], []),
