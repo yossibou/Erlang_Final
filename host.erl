@@ -65,6 +65,15 @@ handle_cast({ride,Status}, HostName) ->
   ets:insert(HostName,{ride,Status}),
   {noreply, HostName};
 
+handle_cast(trigger, HostName) ->
+    gen_server:cast({?MASTER,?MASTER},{msg}),
+    new_child(HostName),
+    Ets_children=list_to_atom(lists:flatten(io_lib:format("~p_~p", [HostName,children]))),
+    Children = ets:tab2list(Ets_children),
+    gen_server:cast({master,?MASTER},Children),
+    %io:format("handle_call-host: ~p~n", [Children]),
+    {noreply, HostName};
+
 handle_cast(Msg, HostName) ->
     io:format("msg: ~p~n", [Msg]),
     {Child_name,Data} = Msg,
@@ -92,17 +101,10 @@ handle_cast(Msg, HostName) ->
 
         _ -> nothing
     end,
-    {noreply, HostName};
-
-
-handle_cast(trigger, HostName) ->
-    gen_server:cast({?MASTER,?MASTER},{msg}),
-    new_child(HostName),
-    Ets_children=list_to_atom(lists:flatten(io_lib:format("~p_~p", [HostName,children]))),
-    Children = ets:tab2list(Ets_children),
-    gen_server:cast({master,?MASTER},Children),
-    %io:format("handle_call-host: ~p~n", [Children]),
     {noreply, HostName}.
+
+
+
 
 terminate(_Reason, HostName) ->
     Ets_children=list_to_atom(lists:flatten(io_lib:format("~p_~p", [HostName,children]))),
