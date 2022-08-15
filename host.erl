@@ -7,13 +7,12 @@
 %%% Created : 25. Jun 2022 16:20
 %%%-------------------------------------------------------------------
 
-%[ets:tab2list(pc1_children),ets:tab2list(pc2_children),ets:tab2list(pc3_children),ets:tab2list(pc4_children)].
 
 -module(host).
 -author("Yossi Bouskila, Tal Tubul").
 -behaviour(gen_server).
 -include("computers.hrl").
--export([start/4,stop/1]).
+-export([start/4,stop/0]).
 -export([init/1, handle_call/3, handle_cast/2,
          terminate/2, code_change/3]).
 -define(STATUS_TIMEOUT, 50).
@@ -24,10 +23,10 @@ start(HostName,Entrance,Borders,Count) ->
     Return = gen_server:start_link({local, HostName}, ?MODULE, [HostName,Entrance,Borders,Count], []),
     io:format("start_link: ~p~n", [Return]),
     Return.
-stop(HostName) ->
-  gen_server:stop({local, HostName}).
+stop() ->
+  gen_server:stop(?MODULE).
 init([HostName,Entrance,Borders,Count]) ->
-    %initRide(HostName),
+    initRide(HostName),
     Ets_children=list_to_atom(lists:flatten(io_lib:format("~p_~p", [HostName,children]))),
     ets:new(Ets_children,[set,named_table]),
     ets:new(HostName,[set,named_table]),
@@ -103,17 +102,14 @@ handle_cast(Msg, HostName) ->
     end,
     {noreply, HostName}.
 
-
-
-
 terminate(_Reason, HostName) ->
     Ets_children=list_to_atom(lists:flatten(io_lib:format("~p_~p", [HostName,children]))),
     Children = ets:tab2list(Ets_children),
-    Function = fun({Child_name,_}) -> rpc:call(node(),child,stop,[Child_name]) end,
+    Function = fun({Child_name,_}) -> exit(whereis(Child_name),kill) end,
     lists:foreach(Function, Children),
     ets:delete(HostName),
     ets:delete(Ets_children),
-    %io:format("terminate: ~p~n", [Return]),
+    io:format("terminate: ~p~n", [Return]),
     ok.
 
 code_change(_OldVsn, State, _Extra) ->
@@ -133,13 +129,8 @@ new_child(HostName) ->
                      Ets_children=list_to_atom(lists:flatten(io_lib:format("~p_~p", [HostName,children]))),
                      [{_,Entrance}] = ets:lookup(HostName,entrance),
                      ets:update_element(HostName,children_count,{2,Children_count+1}),
-                     %Father,Child_Name,Destination,Position,Money
                      Money = rand:uniform(10),
                      ets:insert(Ets_children,{Child_name,[{Entrance,Entrance,Money}]}),
-                     %io:format("New child: ~p~n", [Children_count+1]),
-                     %%child:start(HostName,Child_name,Entrance,Entrance,Money),
-                     %spawn(child,start,[HostName,Child_name,Entrance,Entrance,Money]),
-                     %rpc:call(node(),child,start,[HostName,Child_name,Entrance,Entrance,Money]),
                      spawn(child,start,[HostName,Child_name,Entrance,Entrance,Money]),
                      io:format("New child: ~p~n", [Children_count+1]);
                 _ -> ok
@@ -148,25 +139,17 @@ new_child(HostName) ->
     end.
 
 import_child(HostName,[{Child_name,{Destination,Position,Money}}]) ->
-     %[{_,Entrance}] = ets:lookup(HostName,entrance),
-     %io:format("import ~p~p~n",[Position,Destination]),
      Ets_children=list_to_atom(lists:flatten(io_lib:format("~p_~p", [HostName,children]))),
      ets:insert(Ets_children,{Child_name,[{Destination,Position,Money}]}),
      io:format(" status ~p~n", [spawn(child,start,[HostName,Child_name,Destination,Position,Money])]).
-     %io:format(" status ~p~n", [rpc:call(node(),child,start,[HostName,Child_name,Destination,Position,Money])]).
 
 
 handle_child_transfer(Child_name,Dst_pc,Ets_children)->
-    %io:format(" status2 ~p~n", [rpc:call(node(),child,stop,[Child_name])]),
-    %io:format(" status2 ~p~n", [spawn(child,stop,[Child_name])]),
-    gen_server:cast({Child_name,node()},kill),
-
+    exit(whereis(Child_name),kill)
     Data = ets:lookup(Ets_children,Child_name),
     io:format("transfer: ~p to: ~p from: ~p data: ~p~n", [Child_name,Dst_pc,Ets_children,Data]),
-    case gen_server:call({Dst_pc,Dst_pc},{transfer,Child_name,Data}) of
-        ok -> ets:delete(Ets_children,Child_name);
-        _  -> io:format("problem in transfer")
-   end.
+    gen_server:cast({Dst_pc,Dst_pc},{transfer,Child_name,Data})
+    ets:delete(Ets_children,Child_name).
 
 pc1(Child_name,CurX,CurY,East_border,South_border,Ets_children) ->
     case CurX > East_border andalso CurY > South_border of
@@ -219,12 +202,8 @@ pc4(Child_name,CurX,CurY,West_border,South_border,Ets_children) ->
 
 initRide(HostName)->
   case HostName of
-    %?PC1 -> rpc:call(node(),ride,start,[HostName,open,ridePc1]);
     ?PC1 -> spawn(ride,start,[HostName,open,ridePc1]);
-    %?PC2 -> rpc:call(node(),ride,start,[HostName,open,ridePc2]);
     ?PC2 -> spawn(ride,start,[HostName,open,ridePc2]);
-    %?PC3 -> rpc:call(node(),ride,start,[HostName,open,ridePc3]);
     ?PC3 -> spawn(ride,start,[HostName,open,ridePc3]);
-    %?PC4 -> rpc:call(node(),ride,start,[HostName,open,ridePc4])
     ?PC4 -> spawn(ride,start,[HostName,open,ridePc4])
   end.
