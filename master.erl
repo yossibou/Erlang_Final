@@ -58,7 +58,7 @@ init([]) ->
     Return = {ok, []},
     Return.
 
-handle_call(Request, _From, []) ->
+handle_call(_Request, _From, []) ->
     Reply = ok,
     %io:format("handle_call: ~p~n", [Request]),
     {reply, Reply, []}.
