@@ -41,7 +41,7 @@ stop(Name) ->
 %% gen_statem:start_link/[3,4], this function is called by the new
 %% process to initialize.
 init() ->
-  {ok, main, []]}.
+  {ok, main, []}.
 
 %% @private
 %% @doc This function is called by a gen_statem when it needs to find out
