@@ -17,7 +17,7 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
 start() ->
-    Return = gen_server:start_link({local, master}, ?MODULE, [], [{timeout,500}]),
+    Return = gen_server:start_link({local, master}, ?MODULE, [], []),
     Return.
 stop() ->
 
@@ -50,7 +50,7 @@ init([]) ->
     rpc:call(?PC3,host,start,[?PC3,{800,500},{400,800,250,500},0]),
     rpc:call(?PC4,host,start,[?PC4,{800,0},{400,800,0,250},0]),
     %spawn(gui,start,[]),
-    Return = {ok, [],500},
+    Return = {ok, []},
     Return.
 
 handle_call(Request, _From, []) ->
