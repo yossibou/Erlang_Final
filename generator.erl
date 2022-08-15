@@ -49,19 +49,19 @@ init() ->
 callback_mode() -> [state_functions,state_enter].
 
 main(enter, _OldState, _) ->
-  {next_state, main, _, ?REFRESH};
+  {next_state, main, [], ?REFRESH};
 
-main(timeout, _, Data) ->
+main(timeout, _, []) ->
   gen_server:cast({?PC1,?PC1},trigger),
   gen_server:cast({?PC2,?PC2},trigger),
   gen_server:cast({?PC3,?PC3},trigger),
   gen_server:cast({?PC4,?PC4},trigger),
-  {next_state, main, Data, ?REFRESH}.
+  {next_state, main, [], ?REFRESH}.
 
 %% @private
 %% @doc This function is called by a gen_statem when it is about to
 %% terminate. It should be the opposite of Module:init/1 and do any
 %% necessary cleaning up. When it returns, the gen_statem terminates with
 %% Reason. The return value is ignored.
-terminate(_Reason, _StateName, _ ) ->
+terminate(_Reason, _StateName, [] ) ->
   ok.
