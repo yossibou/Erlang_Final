@@ -15,7 +15,7 @@
 -export([start/0,stop/1]).
 
 %% gen_statem callbacks
--export([init/0, terminate/3, callback_mode/0]).
+-export([init/1, terminate/3, callback_mode/0]).
 -define(REFRESH, 50).
 
 
@@ -40,7 +40,7 @@ stop(Name) ->
 %% @doc Whenever a gen_statem is started using gen_statem:start/[3,4] or
 %% gen_statem:start_link/[3,4], this function is called by the new
 %% process to initialize.
-init() ->
+init([]) ->
   {ok, main, []}.
 
 %% @private
