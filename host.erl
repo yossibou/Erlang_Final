@@ -101,14 +101,14 @@ handle_cast(Msg, HostName) ->
     end,
     {noreply, HostName}.
 
-terminate(_Reason, HostName) ->
+terminate(Reason, HostName) ->
     Ets_children=list_to_atom(lists:flatten(io_lib:format("~p_~p", [HostName,children]))),
     Children = ets:tab2list(Ets_children),
     Function = fun({Child_name,_}) -> exit(whereis(Child_name),kill) end,
     lists:foreach(Function, Children),
     ets:delete(HostName),
     ets:delete(Ets_children),
-    io:format("terminate: ~p~n", [Return]),
+    io:format("terminate: ~p~n", [Reason]),
     ok.
 
 code_change(_OldVsn, State, _Extra) ->
@@ -143,7 +143,7 @@ import_child(HostName,[{Child_name,{Destination,Position,Money}}]) ->
 
 
 handle_child_transfer(Child_name,Dst_pc,Ets_children)->
-    exit(whereis(Child_name),kill)
+    exit(whereis(Child_name),kill),
     Data = ets:lookup(Ets_children,Child_name),
     io:format("transfer: ~p to: ~p from: ~p data: ~p~n", [Child_name,Dst_pc,Ets_children,Data]),
     gen_server:cast({Dst_pc,Dst_pc},{transfer,Child_name,Data})
