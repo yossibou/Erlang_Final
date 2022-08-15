@@ -25,15 +25,15 @@ stop() ->
 init([]) ->
 
     net_kernel:monitor_nodes(true), % monitor nodes
-    timer:sleep(200),
-    net_kernel:connect_node(?PC1), % connect all nodes
-    timer:sleep(200),
-    net_kernel:connect_node(?PC2),
-    timer:sleep(200),
-    net_kernel:connect_node(?PC3),
-    timer:sleep(200),
-    net_kernel:connect_node(?PC4),
-    timer:sleep(200),
+    %%timer:sleep(200),
+    %%net_kernel:connect_node(?PC1), % connect all nodes
+    %%timer:sleep(200),
+    %%net_kernel:connect_node(?PC2),
+    %%timer:sleep(200),
+    %%net_kernel:connect_node(?PC3),
+    %%timer:sleep(200),
+    %%net_kernel:connect_node(?PC4),
+    %%timer:sleep(200),
 
     put(?PC1,?PC1), % put all PCs in process dictionary
     put(?PC2,?PC2),
@@ -46,9 +46,13 @@ init([]) ->
 
     % start all servers
     erpc:call(?PC1,host,start,[?PC1,{0,0},{0,400,0,250},0]),
+    timer:sleep(200),
     erpc:call(?PC2,host,start,[?PC2,{0,500},{0,400,250,500},0]),
+    timer:sleep(200),
     erpc:call(?PC3,host,start,[?PC3,{800,500},{400,800,250,500},0]),
+    timer:sleep(200),
     erpc:call(?PC4,host,start,[?PC4,{800,0},{400,800,0,250},0]),
+    timer:sleep(200),
     %spawn(gui,start,[]),
     spawn(generator,start,[]),
     Return = {ok, []},
