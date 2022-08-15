@@ -30,7 +30,7 @@ start(Father,Status,RideName) ->
   gen_statem:start_link({local, RideName},?MODULE, [Father,Status], []).
 
 stop(RideName) ->
-  gen_statem:stop({local,RideName}).
+  gen_statem:stop(?MODULE).
 %%%===================================================================
 %%% gen_statem callbacks
 %%%===================================================================
@@ -40,7 +40,7 @@ stop(RideName) ->
 %% gen_statem:start_link/[3,4], this function is called by the new
 %% process to initialize.
 init([Father,Status]) ->
-  {ok, Status, [Father]}.
+  {ok, Status, Father}.
 
 %% @private
 %% @doc This function is called by a gen_statem when it needs to find out
