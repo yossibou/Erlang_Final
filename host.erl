@@ -87,7 +87,7 @@ handle_cast(Child_data, [HostName,Ets_children]) ->
             [{_,North_border}] = ets:lookup(HostName,north_border),
 
             case Money =:= 0 andalso {CurX,CurY} =:= Exit_point of
-                true -> exit(whereis(Child_name),kill),,ets:delete(Ets_children,Child_name);
+                true -> exit(whereis(Child_name),kill),ets:delete(Ets_children,Child_name);
                 false ->
                     ets:insert(Ets_children,{Child_name,Data}),
                     case HostName of
