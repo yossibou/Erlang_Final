@@ -179,5 +179,5 @@ enter_ride(Data)->
          end;
         _     -> Cur_pos ={DstX,DstY}
   end,
-  gen_server:cast({Father,Father},{Data,{{DstX,DstY},Cur_pos,Money}}).
+  gen_server:cast({Father,node()},{Data,{{DstX,DstY},Cur_pos,Money}}).
 
