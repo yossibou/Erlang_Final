@@ -69,7 +69,7 @@ walking(enter, _OldState, Data) ->
       Ride_dst = rand:uniform(4),
       case Money>0 of
         true ->   case Ride_dst of
-                    1 -> NewDest = {590,252};%io:format("Ferris wheel ~n");
+                    1 -> NewDest = {590,245};%io:format("Ferris wheel ~n");
                     2 -> NewDest = {200,162};%io:format("Pirate ship ~n");
                     3 -> NewDest = {160,377};%io:format("roller coaster ~n")
                     4 -> NewDest = {426,423} %io:format("Haunted house ~n")
@@ -89,7 +89,7 @@ walking(timeout, _, Data) ->
     false -> {DstX,DstY} = {0,0}
   end,
   [{_,Father}] = ets:lookup(Data,father),
-  gen_server:cast({Father,Father},{Data,{{DstX,DstY},{CurX,CurY},Money}}),
+  gen_server:cast({Father,node()},{Data,{{DstX,DstY},{CurX,CurY},Money}}),
 
   case CurX =:= DstX andalso CurY =:= DstY of
     false ->
@@ -130,7 +130,7 @@ on_ride(enter, _OldState, Data) ->
   %io:format("on_ride~n"),
   [{_,Money}] = ets:lookup(Data,money),
   [{_,Father}] = ets:lookup(Data,father),
-  gen_server:cast({Father,Father},money),
+  gen_server:cast({Father,node()},money),
   ets:insert(Data,{money, Money-1}),
   enter_ride(Data),
   {next_state, on_ride, Data, 30000};
@@ -140,7 +140,7 @@ on_ride(timeout, _, Data) ->
   [{_,{DstX,DstY}}] = ets:lookup(Data,destination),
   [{_,Father}] = ets:lookup(Data,father),
   [{_,Money}] = ets:lookup(Data,money),
-  gen_server:cast({Father,Father},{Data,{{DstX,DstY},{DstX,DstY},Money}}),
+  gen_server:cast({Father,node()},{Data,{{DstX,DstY},{DstX,DstY},Money}}),
   {next_state, walking, Data}.
 
 %% @private
@@ -159,9 +159,10 @@ enter_ride(Data)->
   [{_,Father}] = ets:lookup(Data,father),
   [{_,Money}] = ets:lookup(Data,money),
   case {DstX,DstY} of
-    {590,252} -> case rand:uniform(2) of
+    {590,245} -> case rand:uniform(3) of
             1 -> Cur_pos = {614,126};
-            2 -> Cur_pos = {707,128}
+            2 -> Cur_pos = {707,128};
+            3 -> Cur_pos = {677,199}
          end;
     {200,162} -> case rand:uniform(2) of
             1 -> Cur_pos = {305,91};
@@ -172,10 +173,9 @@ enter_ride(Data)->
             2 -> Cur_pos = {207,271};
             3 -> Cur_pos = {296,309}
          end;
-    {426,423} -> case rand:uniform(3) of
+    {426,423} -> case rand:uniform(2) of
             1 -> Cur_pos = {474,387};
-            2 -> Cur_pos = {534,390};
-            3 -> Cur_pos = {677,199}
+            2 -> Cur_pos = {534,390}      
          end;
         _     -> Cur_pos ={DstX,DstY}
   end,
