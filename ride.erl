@@ -7,7 +7,7 @@
 %%% Created : 25. Jun 2022 16:20
 %%%-------------------------------------------------------------------
 -module(ride).
--author("Yossi Bouskila, Tal Tubul").
+-author("Tal Tubul").
 
 -behaviour(gen_statem).
 
@@ -15,7 +15,7 @@
 -export([start/3,stop/0]).
 
 %% gen_statem callbacks
--export([init/1, format_status/2, terminate/3, callback_mode/0]).
+-export([init/1, terminate/3, callback_mode/0]).
 -export([maintenance/3,work/3,open/3]).
 
 %%%===================================================================
@@ -40,20 +40,12 @@ stop() ->
 %% gen_statem:start_link/[3,4], this function is called by the new
 %% process to initialize.
 init([Father,Status]) ->
-  {ok, Status, Father}.
+  {ok, Status, Father, 1000}.
 
 %% @private
 %% @doc This function is called by a gen_statem when it needs to find out
 %% the callback mode of the callback module.
-callback_mode() -> [state_functions,state_enter].
-
-%% @private
-%% @doc Called (1) whenever sys:get_status/1,2 is called by gen_statem or
-%% (2) when gen_statem terminates abnormally.
-%% This callback is optional.
-format_status(_Opt, [_PDict, _StateName, _State]) ->
-  Status = some_term,
-  Status.
+callback_mode() -> [state_functions].
 
 %% @private
 %% @doc There should be one instance of this function for each possible
@@ -61,27 +53,24 @@ format_status(_Opt, [_PDict, _StateName, _State]) ->
 %% functions is called when gen_statem receives and event from
 %% call/2, cast/2, or as a normal process message.
 
-open(enter, _OldState, Father) ->
-  gen_server:cast({Father,Father},{ride,open}),
-  {next_state, open, Father, 2000};
+open(timeout, _, Father) ->
+    %io:format("ride: open ~n"),
+    gen_server:cast({Father,Father},{ride,open}),
+    {next_state, work, Father ,2000}.
 
-open(timeout, _, Data) ->
-    {next_state, work, Data}.
-
-work(enter, _OldState, Father) ->
+work(timeout, _, Father) ->
+  %io:format("ride: work ~n"),
   gen_server:cast({Father,Father},{ride,work}),
-  {next_state, work, Father, 10000};
-work(timeout, _, Data) ->
-  case rand:uniform(10)>9 of
-    true -> {next_state, maintenance, Data};
-    _    -> {next_state, open, Data}
+  case rand:uniform(10) > 9 of
+    true -> {next_state, maintenance, Father, 30000};
+    _    -> {next_state, open, Father, 30000}
   end.
 
-maintenance(enter, _OldState, Father) ->
+maintenance(timeout, _, Father) ->
+  %io:format("ride: maintenance ~n"),
   gen_server:cast({Father,Father},{ride,maintenance}),
-  {next_state, maintenance, Father, 10000};
-maintenance(timeout, _, Data) ->
-  {next_state, open, Data}.
+  {next_state, open, Father, 10000}.
+
 %% @private
 %% @doc This function is called by a gen_statem when it is about to
 %% terminate. It should be the opposite of Module:init/1 and do any
