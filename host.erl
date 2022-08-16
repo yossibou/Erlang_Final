@@ -9,15 +9,14 @@
 
 
 -module(host).
--author("Yossi Bouskila, Tal Tubul").
+-author("Yossi Bouskila").
 -behaviour(gen_server).
 -include("computers.hrl").
 -export([start/4,stop/0]).
--export([init/1, handle_call/3, handle_cast/2,
-         terminate/2, code_change/3]).
--define(STATUS_TIMEOUT, 50).
+-export([init/1, handle_cast/2,handle_call/3,
+         terminate/2]).
 -define(MaxTotalChildren, 6).
--define(RATE, 2). %STATUS_TIMEOUT*RATE
+-define(RATE, 20).
 
 start(HostName,Entrance,Borders,Count) ->
     Return = gen_server:start_link({local, HostName}, ?MODULE, [HostName,Entrance,Borders,Count], []),
@@ -39,43 +38,45 @@ init([HostName,Entrance,Borders,Count]) ->
     ets:insert(HostName,{north_border,North_border}),
     ets:insert(HostName,{children_count,Count}),
     ets:insert(HostName,{ride,open}),
+    ets:insert(HostName,{money,0}),
     ets:insert(HostName,{total_child,0}),
     io:format("ready"),
-    Return = {ok, HostName},
+    Return = {ok, [HostName,Ets_children]},
     Return.
 
-handle_call({transfer,_,Data}, _From, HostName) ->
-    import_child(HostName,Data),
+handle_call(_Request, _From, []) ->
     Reply = ok,
-    io:format("handle_call: ~p~n", [Data]),
-    {reply, Reply, HostName}.
+    {reply, Reply, []}.
 
-handle_cast({transfer,_,Data}, HostName) ->
-    import_child(HostName,Data),
+handle_cast(money, [HostName,Ets_children]) ->
+    [{_,Money}] = ets:lookup(HostName,money),
+    ets:insert(HostName,{money,Money+1}),
+    {noreply, [HostName,Ets_children]};
+
+handle_cast({transfer,_,Data}, [HostName,Ets_children]) ->
+    import_child([HostName,Ets_children],Data),
     io:format("get transfer msg: ~p~n", [Data]),
-    {noreply, HostName};
+    {noreply, [HostName,Ets_children]};
 
-handle_cast({children_count,Children_count}, HostName) ->
-    %io:format("msg: ~p~n", [Children_count]),
+handle_cast({children_count,Children_count},[HostName,Ets_children]) ->
     ets:insert(HostName,{total_child,Children_count}),
-    {noreply, HostName};
+    {noreply, [HostName,Ets_children]};
 
-handle_cast({ride,Status}, HostName) ->
+handle_cast({ride,Status}, [HostName,Ets_children]) ->
   ets:insert(HostName,{ride,Status}),
-  {noreply, HostName};
+  {noreply, [HostName,Ets_children]};
 
-handle_cast(trigger, HostName) ->
-    gen_server:cast({?MASTER,?MASTER},{msg}),
-    new_child(HostName),
-    Ets_children=list_to_atom(lists:flatten(io_lib:format("~p_~p", [HostName,children]))),
+handle_cast(trigger, [HostName,Ets_children]) ->
+    new_child([HostName,Ets_children]),
     Children = ets:tab2list(Ets_children),
     gen_server:cast({master,?MASTER},Children),
-    %io:format("handle_call-host: ~p~n", [Children]),
-    {noreply, HostName};
+    [{_,Money}] = ets:lookup(HostName,money),
+    gen_server:cast({master,?MASTER},{money,Money}),
+    ets:insert(HostName,{money,0}),
+    {noreply, [HostName,Ets_children]};
 
-handle_cast(Msg, HostName) ->
-    {Child_name,Data} = Msg,
-    Ets_children=list_to_atom(lists:flatten(io_lib:format("~p_~p", [HostName,children]))),
+handle_cast(Child_data, [HostName,Ets_children]) ->
+    {Child_name,Data} = Child_data,
     case [] =:= ets:lookup(Ets_children,Child_name) of
         false ->
             [{_,Exit_point}] = ets:lookup(HostName,entrance),
@@ -86,9 +87,9 @@ handle_cast(Msg, HostName) ->
             [{_,North_border}] = ets:lookup(HostName,north_border),
 
             case Money =:= 0 andalso {CurX,CurY} =:= Exit_point of
-                true -> child:stop(Child_name),ets:delete(Ets_children,Child_name);
+                true -> exit(whereis(Child_name),kill),,ets:delete(Ets_children,Child_name);
                 false ->
-                    ets:update_element(Ets_children,Child_name,{2, Data}),
+                    ets:insert(Ets_children,{Child_name,Data}),
                     case HostName of
                         ?PC1 -> pc1(Child_name,CurX,CurY,East_border,South_border,Ets_children);
                         ?PC2 -> pc2(Child_name,CurX,CurY,East_border,North_border,Ets_children);
@@ -99,10 +100,9 @@ handle_cast(Msg, HostName) ->
 
         _ -> nothing
     end,
-    {noreply, HostName}.
+    {noreply, [HostName,Ets_children]}.
 
-terminate(Reason, HostName) ->
-    Ets_children=list_to_atom(lists:flatten(io_lib:format("~p_~p", [HostName,children]))),
+terminate(Reason, [HostName,Ets_children]) ->
     Children = ets:tab2list(Ets_children),
     Function = fun({Child_name,_}) -> exit(whereis(Child_name),kill) end,
     lists:foreach(Function, Children),
@@ -111,12 +111,7 @@ terminate(Reason, HostName) ->
     io:format("terminate: ~p~n", [Reason]),
     ok.
 
-code_change(_OldVsn, State, _Extra) ->
-    Return = {ok, State},
-    %io:format("code_change: ~p~n", [Return]),
-    Return.
-
-new_child(HostName) ->
+new_child([HostName,Ets_children]) ->
     [{_,Total_child}] = ets:lookup(HostName,total_child),
     case Total_child<?MaxTotalChildren of
         true ->
@@ -124,9 +119,8 @@ new_child(HostName) ->
                 1 ->
                      [{_,Children_count}] = ets:lookup(HostName,children_count),
                      Child_name = list_to_atom(lists:flatten(io_lib:format("child_~p_N~B", [HostName,Children_count]))),
-                     Ets_children=list_to_atom(lists:flatten(io_lib:format("~p_~p", [HostName,children]))),
                      [{_,Entrance}] = ets:lookup(HostName,entrance),
-                     ets:update_element(HostName,children_count,{2,Children_count+1}),
+                     ets:insert(HostName,{children_count,Children_count+1}),
                      Money = rand:uniform(10),
                      ets:insert(Ets_children,{Child_name,[{Entrance,Entrance,Money}]}),
                      spawn(child,start,[HostName,Child_name,Entrance,Entrance,Money]),
@@ -136,8 +130,7 @@ new_child(HostName) ->
         _ -> ok
     end.
 
-import_child(HostName,[{Child_name,{Destination,Position,Money}}]) ->
-     Ets_children=list_to_atom(lists:flatten(io_lib:format("~p_~p", [HostName,children]))),
+import_child([HostName,Ets_children],[{Child_name,{Destination,Position,Money}}]) ->
      ets:insert(Ets_children,{Child_name,[{Destination,Position,Money}]}),
      io:format(" import ~p~n", [spawn(child,start,[HostName,Child_name,Destination,Position,Money])]).
 
@@ -161,6 +154,7 @@ pc1(Child_name,CurX,CurY,East_border,South_border,Ets_children) ->
                     _    -> ok
                 end
     end.
+
 pc2(Child_name,CurX,CurY,East_border,North_border,Ets_children) ->
     case CurX > East_border andalso CurY < North_border of
         true ->  handle_child_transfer(Child_name,?PC4,Ets_children);
@@ -185,6 +179,7 @@ pc3(Child_name,CurX,CurY,West_border,North_border,Ets_children) ->
                     _    -> ok
                 end
     end.
+
 pc4(Child_name,CurX,CurY,West_border,South_border,Ets_children) ->
     case CurX < West_border andalso CurY > South_border of
         true ->  handle_child_transfer(Child_name,?PC2,Ets_children);
