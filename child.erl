@@ -7,7 +7,7 @@
 %%% Created : 25. Jun 2022 16:20
 %%%-------------------------------------------------------------------
 -module(child).
--author("Yossi Bouskila, Tal Tubul").
+-author("Tal Tubul").
 
 -behaviour(gen_statem).
 
@@ -15,9 +15,9 @@
 -export([start/5,stop/1]).
 
 %% gen_statem callbacks
--export([init/1, format_status/2, terminate/3, callback_mode/0]).
+-export([init/1,terminate/3, callback_mode/0]).
 -export([walking/3,in_queue/3,on_ride/3]).
--define(WALKING_TIMEOUT, 200).
+-define(WALKING_TIMEOUT, 100).
 
 
 %%%===================================================================
@@ -55,14 +55,6 @@ init([Father,Child_Name,Destination,Position,Money]) ->
 callback_mode() -> [state_functions,state_enter].
 
 %% @private
-%% @doc Called (1) whenever sys:get_status/1,2 is called by gen_statem or
-%% (2) when gen_statem terminates abnormally.
-%% This callback is optional.
-format_status(_Opt, [_PDict, _StateName, _State]) ->
-  Status = some_term,
-  Status.
-
-%% @private
 %% @doc There should be one instance of this function for each possible
 %% state name.  If callback_mode is state_functions, one of these
 %% functions is called when gen_statem receives and event from
@@ -80,12 +72,11 @@ walking(enter, _OldState, Data) ->
                     1 -> NewDest = {590,252};%io:format("Ferris wheel ~n");
                     2 -> NewDest = {200,162};%io:format("Pirate ship ~n");
                     3 -> NewDest = {160,377};%io:format("roller coaster ~n")
-                    4 -> NewDest = {426,423}%io:format("Haunted house ~n")
+                    4 -> NewDest = {426,423} %io:format("Haunted house ~n")
                   end;
-        false ->
-            NewDest = {0,0}
+        false ->  NewDest = {0,0}
       end,
-      ets:update_element(Data,destination,{2,NewDest});
+      ets:insert(Data,{destination, NewDest});
     _ -> ok
   end,
   {next_state, walking, Data, ?WALKING_TIMEOUT};
@@ -118,25 +109,29 @@ walking(timeout, _, Data) ->
                   end;
          _ -> NewY = CurY
       end,
-      ets:update_element(Data,position,{2, {NewX,NewY}}),{next_state, walking, Data, ?WALKING_TIMEOUT};
+      ets:insert(Data,{position, {NewX,NewY}}),
+      {next_state, walking, Data, ?WALKING_TIMEOUT};
     _    -> {next_state, in_queue, Data}%%%arrive
   end.
 
 in_queue(enter, _OldState, Data) ->
   %io:format("in_queue~n"),
-  {next_state, in_queue, Data, 100};
+  {next_state, in_queue, Data, ?WALKING_TIMEOUT};
+
 in_queue(timeout, _, Data) ->
   [{_,Father}] = ets:lookup(Data,father),
   [{_,Status}] = ets:lookup(Father,ride),
   case Status of
     open -> {next_state, on_ride, Data};
-    _    -> {next_state, in_queue, Data, 100}
+    _    -> {next_state, in_queue, Data, ?WALKING_TIMEOUT}
   end.
 
 on_ride(enter, _OldState, Data) ->
   %io:format("on_ride~n"),
   [{_,Money}] = ets:lookup(Data,money),
-  ets:update_element(Data,money,{2,Money-1}),
+  [{_,Father}] = ets:lookup(Data,father),
+  gen_server:cast({Father,Father},money),
+  ets:insert(Data,{money, Money-1}),
   enter_ride(Data),
   {next_state, on_ride, Data, 30000};
 
@@ -163,7 +158,6 @@ enter_ride(Data)->
   [{_,{DstX,DstY}}] = ets:lookup(Data,destination),
   [{_,Father}] = ets:lookup(Data,father),
   [{_,Money}] = ets:lookup(Data,money),
-  %[{_,Ride_dst}] = ets:lookup(Data,ride_dst),
   case {DstX,DstY} of
     {590,252} -> case rand:uniform(2) of
             1 -> Cur_pos = {614,126};
