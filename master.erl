@@ -81,38 +81,38 @@ handle_info({nodeup,PC},State)->
 handle_info({nodedown,PC},State)-> % if a node is down, check which PC, move responsibilities to different PC
   io:format("~p nodedown ~n",[PC]),
   case PC of
-    ?PC1 -> erpc:call(?PC2,host,start,[?PC1,{0,0},{0,400,0,250},100]),
+    ?PC1 -> erpc:cast(?PC2,host,start,[?PC1,{0,0},{0,400,0,250},100]),
             Function = fun(Child) ->
                 {Child_name,{_,{CurX,CurY},_}} = Child,
                 case CurX<400 andalso CurY<250 of
-                    true -> gen_server:call({?PC1,?PC2},{transfer,Child_name,[Child]});
+                    true -> gen_server:cast({?PC1,?PC2},{transfer,Child_name,[Child]});
                     _    -> ok
                 end
             end,
             lists:foreach(Function, ets:tab2list(children));
-    ?PC2 -> erpc:call(?PC3,host,start,[?PC2,{0,500},{0,400,250,500},100]),
+    ?PC2 -> erpc:cast(?PC3,host,start,[?PC2,{0,500},{0,400,250,500},100]),
             Function = fun(Child) ->
                 {Child_name,{_,{CurX,CurY},_}} = Child,
                 case CurX<400 andalso CurY>250 of
-                    true -> gen_server:call({?PC2,?PC3},{transfer,Child_name,[Child]});
+                    true -> gen_server:cast({?PC2,?PC3},{transfer,Child_name,[Child]});
                     _    -> ok
                 end
             end,
             lists:foreach(Function, ets:tab2list(children));
-    ?PC3 -> erpc:call(?PC4,host,start,[?PC3,{800,500},{400,800,250,500},100]),
+    ?PC3 -> erpc:cast(?PC4,host,start,[?PC3,{800,500},{400,800,250,500},100]),
             Function = fun(Child) ->
                 {Child_name,{_,{CurX,CurY},_}} = Child,
                 case CurX>400 andalso CurY>250 of
-                    true -> gen_server:call({?PC3,?PC4},{transfer,Child_name,[Child]});
+                    true -> gen_server:cast({?PC3,?PC4},{transfer,Child_name,[Child]});
                     _    -> ok
                 end
             end,
             lists:foreach(Function, ets:tab2list(children));
-    ?PC4 -> erpc:call(?PC1,host,start,[?PC4,{800,0},{400,800,0,250},100]),
+    ?PC4 -> erpc:cast(?PC1,host,start,[?PC4,{800,0},{400,800,0,250},100]),
             Function = fun(Child) ->
                 {Child_name,{_,{CurX,CurY},_}} = Child,
                 case CurX>400 andalso CurY<250 of
-                    true -> gen_server:call({?PC4,?PC1},{transfer,Child_name,[Child]});
+                    true -> gen_server:cast({?PC4,?PC1},{transfer,Child_name,[Child]});
                     _    -> ok
                 end
             end,
