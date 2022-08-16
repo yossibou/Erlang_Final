@@ -7,7 +7,7 @@
 %%% Created : 25. Jun 2022 16:20
 %%%-------------------------------------------------------------------
 -module(generator).
--author("Yossi Bouskila, Tal Tubul").
+-author("Tal Tubul").
 -include("computers.hrl").
 -behaviour(gen_statem).
 
@@ -16,8 +16,7 @@
 
 %% gen_statem callbacks
 -export([init/1, terminate/3, callback_mode/0, main/3]).
--define(REFRESH, 50).
-
+-define(REFRESH, 500).
 
 %%%===================================================================
 %%% API
@@ -41,22 +40,23 @@ stop() ->
 %% gen_statem:start_link/[3,4], this function is called by the new
 %% process to initialize.
 init([]) ->
-  {ok, main, []}.
+  {ok, main, 0, ?REFRESH}.
 
 %% @private
 %% @doc This function is called by a gen_statem when it needs to find out
 %% the callback mode of the callback module.
-callback_mode() -> [state_functions,state_enter].
+callback_mode() -> [state_functions].
 
-main(enter, _OldState, _) ->
-  {next_state, main, [], ?REFRESH};
-
-main(timeout, _, []) ->
+main(timeout, _, Count) ->
   gen_server:cast({?PC1,?PC1},trigger),
   gen_server:cast({?PC2,?PC2},trigger),
   gen_server:cast({?PC3,?PC3},trigger),
   gen_server:cast({?PC4,?PC4},trigger),
-  {next_state, main, [], ?REFRESH}.
+  case Count rem 10 =:= 0 of
+    true -> gen_server:cast({master,?MASTER},statistics);
+    _    -> ok
+  end,
+  {next_state, main, Count+1, ?REFRESH}.
 
 %% @private
 %% @doc This function is called by a gen_statem when it is about to
