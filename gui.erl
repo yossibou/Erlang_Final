@@ -7,7 +7,7 @@
 %%% Created : 25. Jun 2022 16:20
 %%%-------------------------------------------------------------------
 -module(gui).
--author("Yossi Bouskila, Tal Tubul").
+-author("Yossi Bouskila").
 -behaviour(wx_object).
 -include_lib("wx/include/wx.hrl").
 
@@ -38,9 +38,6 @@ init([]) ->
   erlang:send_after(?Timer, self(), timer),
 
   wxPanel:connect(Panel, paint, [callback]),
-  %wxPanel:connect (Panel, left_down),
-  %wxPanel:connect (Panel, right_down),
-  %wxFrame:connect(Frame, close_window),
 
   {Frame,#state{frame = Frame, panel = Panel, dc=DC, paint = Paint,
     bmpMap = BmpMap,bmpChild =BmpChild}}.
