@@ -7,10 +7,9 @@
 %%% Created : 25. Jun 2022 16:20
 %%%-------------------------------------------------------------------
 
-%[ets:tab2list(pc1_children),ets:tab2list(pc2_children),ets:tab2list(pc3_children),ets:tab2list(pc4_children)].
 
 -module(master).
--author("Yossi Bouskila, Tal Tubul").
+-author("Yossi Bouskila").
 -behaviour(gen_server).
 -include("computers.hrl").
 -export([start/0,stop/0]).
@@ -25,24 +24,11 @@ stop() ->
 init([]) ->
 
     net_kernel:monitor_nodes(true), % monitor nodes
-    %%timer:sleep(200),
-    %%net_kernel:connect_node(?PC1), % connect all nodes
-    %%timer:sleep(200),
-    %%net_kernel:connect_node(?PC2),
-    %%timer:sleep(200),
-    %%net_kernel:connect_node(?PC3),
-    %%timer:sleep(200),
-    %%net_kernel:connect_node(?PC4),
-    %%timer:sleep(200),
-
-    put(?PC1,?PC1), % put all PCs in process dictionary
-    put(?PC2,?PC2),
-    put(?PC3,?PC3),
-    put(?PC4,?PC4),
 
     ets:new(children,[set,named_table]),
     ets:new(data,[set,named_table]),
     ets:insert(data,{children_count,0}),
+    ets:insert(data,{money,0}),
 
     % start all servers
     erpc:cast(?PC1,host,start,[?PC1,{0,0},{0,400,0,250},0]),
@@ -60,11 +46,20 @@ init([]) ->
 
 handle_call(_Request, _From, []) ->
     Reply = ok,
-    %io:format("handle_call: ~p~n", [Request]),
     {reply, Reply, []}.
 
-handle_cast({msg}, []) ->   
-    {noreply, []};    
+handle_cast({money,Val}, []) ->
+    [{_,Money}] = ets:lookup(data,money),
+    ets:insert(data,{money,Money + Val}),
+    {noreply, []};
+
+handle_cast(statistics, []) ->
+    io:format("statistics ~n"),
+    [{_,Money}] = ets:lookup(data,money),
+    io:format("money: ~p ~n",[Money]),
+    io:format("children list: ~n ~p ~n",[ets:tab2list(children)]),
+    {noreply, []};
+
 handle_cast(Msg, []) ->
     Function = fun({Child_name,Data}) -> ets:insert(children,{Child_name,Data}) end,
     lists:foreach(Function, Msg),
@@ -77,7 +72,6 @@ handle_cast(Msg, []) ->
     gen_server:cast({?PC3,?PC3},{children_count,Children_count}),
     gen_server:cast({?PC4,?PC4},{children_count,Children_count}),
     %io:format("handle_call: ~p~n", [Msg]),
-    %{Child_name,Data} = Msg,
     {noreply, []}.
 
 handle_info({nodeup,PC},State)->
@@ -131,17 +125,12 @@ handle_info(_Info, []) ->
     {noreply, [],1000}.
 
 terminate(_Reason, []) ->
-    %rpc:call(?PC1,host,stop,[?PC1]),
-    %rpc:call(?PC2,host,stop,[?PC2]),
-    %rpc:call(?PC3,host,stop,[?PC3]),
-    %rpc:call(?PC4,host,stop,[?PC4]),
+    erpc:cast(?PC1,host,stop,[]),
+    erpc:cast(?PC2,host,stop,[]),
+    erpc:cast(?PC3,host,stop,[]),
+    erpc:cast(?PC4,host,stop,[]),
     ets:delete(data),
     ets:delete(children),
-
-    %host:stop(pc1),
-    %host:stop(pc2),
-    %host:stop(pc3),
-    %host:stop(pc4),
 
     io:format("terminate: all data erase~n"),
     ok.
