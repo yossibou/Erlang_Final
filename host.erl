@@ -87,7 +87,7 @@ handle_cast(Child_data, [HostName,Ets_children]) ->
             [{_,North_border}] = ets:lookup(HostName,north_border),
 
             case Money =:= 0 andalso {CurX,CurY} =:= Exit_point of
-                true -> exit(whereis(Child_name),kill),ets:delete(Ets_children,Child_name);
+                true -> exit(global:whereis_name(Child_name),kill),ets:delete(Ets_children,Child_name);
                 false ->
                     ets:insert(Ets_children,{Child_name,Data}),
                     case HostName of
@@ -104,7 +104,7 @@ handle_cast(Child_data, [HostName,Ets_children]) ->
 
 terminate(Reason, [HostName,Ets_children]) ->
     Children = ets:tab2list(Ets_children),
-    Function = fun({Child_name,_}) -> exit(whereis(Child_name),kill) end,
+    Function = fun({Child_name,_}) -> exit(global:whereis_name(Child_name),kill) end,
     lists:foreach(Function, Children),
     ets:delete(HostName),
     ets:delete(Ets_children),
@@ -136,7 +136,7 @@ import_child([HostName,Ets_children],[{Child_name,{Destination,Position,Money}}]
 
 
 handle_child_transfer(Child_name,Dst_pc,Ets_children)->
-    exit(whereis(Child_name),kill),
+    exit(global:whereis_name(Child_name),kill),
     Data = ets:lookup(Ets_children,Child_name),
     io:format("transfer: ~p to: ~p from: ~p data: ~p~n", [Child_name,Dst_pc,Ets_children,Data]),
     gen_server:cast({global,Dst_pc},{transfer,Child_name,Data}),
