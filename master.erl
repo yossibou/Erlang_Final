@@ -81,7 +81,7 @@ handle_info({nodeup,PC},State)->
 handle_info({nodedown,PC},State)-> % if a node is down, check which PC, move responsibilities to different PC
   io:format("~p nodedown ~n",[PC]),
   case PC of
-    ?PC1 -> erpc:cast(?PC2,host,start,[?PC1,{0,0},{0,400,0,250},100]),
+    ?PC1 -> global:unregister_name(?PC1),erpc:cast(?PC2,host,start,[?PC1,{0,0},{0,400,0,250},100]),
             timer:sleep(200),
             Function = fun(Child) ->
                 {Child_name,{_,{CurX,CurY},_}} = Child,
@@ -91,7 +91,7 @@ handle_info({nodedown,PC},State)-> % if a node is down, check which PC, move res
                 end
             end,
             lists:foreach(Function, ets:tab2list(children));
-    ?PC2 -> erpc:cast(?PC3,host,start,[?PC2,{0,500},{0,400,250,500},100]),
+    ?PC2 -> global:unregister_name(?PC2),erpc:cast(?PC3,host,start,[?PC2,{0,500},{0,400,250,500},100]),
             timer:sleep(200),
             Function = fun(Child) ->
                 {Child_name,{_,{CurX,CurY},_}} = Child,
@@ -101,7 +101,7 @@ handle_info({nodedown,PC},State)-> % if a node is down, check which PC, move res
                 end
             end,
             lists:foreach(Function, ets:tab2list(children));
-    ?PC3 -> erpc:cast(?PC4,host,start,[?PC3,{800,500},{400,800,250,500},100]),
+    ?PC3 -> global:unregister_name(?PC3),erpc:cast(?PC4,host,start,[?PC3,{800,500},{400,800,250,500},100]),
             timer:sleep(200),
             Function = fun(Child) ->
                 {Child_name,{_,{CurX,CurY},_}} = Child,
@@ -111,7 +111,7 @@ handle_info({nodedown,PC},State)-> % if a node is down, check which PC, move res
                 end
             end,
             lists:foreach(Function, ets:tab2list(children));
-    ?PC4 -> erpc:cast(?PC1,host,start,[?PC4,{800,0},{400,800,0,250},100]),
+    ?PC4 -> global:unregister_name(?PC4),erpc:cast(?PC1,host,start,[?PC4,{800,0},{400,800,0,250},100]),
             timer:sleep(200),
             Function = fun(Child) ->
                 {Child_name,{_,{CurX,CurY},_}} = Child,
