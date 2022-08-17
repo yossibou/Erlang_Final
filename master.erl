@@ -82,37 +82,41 @@ handle_info({nodedown,PC},State)-> % if a node is down, check which PC, move res
   io:format("~p nodedown ~n",[PC]),
   case PC of
     ?PC1 -> erpc:cast(?PC2,host,start,[?PC1,{0,0},{0,400,0,250},100]),
+            timer:sleep(200),
             Function = fun(Child) ->
                 {Child_name,{_,{CurX,CurY},_}} = Child,
                 case CurX<400 andalso CurY<250 of
-                    true -> exit(global:whereis_name(Child_name),kill),gen_server:cast({global,?PC1},{transfer,Child_name,[Child]});
+                    true -> global:unregister_name(Child_name),gen_server:cast({global,?PC1},{transfer,Child_name,[Child]});
                     _    -> ok
                 end
             end,
             lists:foreach(Function, ets:tab2list(children));
     ?PC2 -> erpc:cast(?PC3,host,start,[?PC2,{0,500},{0,400,250,500},100]),
+            timer:sleep(200),
             Function = fun(Child) ->
                 {Child_name,{_,{CurX,CurY},_}} = Child,
                 case CurX<400 andalso CurY>250 of
-                    true -> exit(global:whereis_name(Child_name),kill),gen_server:cast({global,?PC2},{transfer,Child_name,[Child]});
+                    true -> global:unregister_name(Child_name),gen_server:cast({global,?PC2},{transfer,Child_name,[Child]});
                     _    -> ok
                 end
             end,
             lists:foreach(Function, ets:tab2list(children));
     ?PC3 -> erpc:cast(?PC4,host,start,[?PC3,{800,500},{400,800,250,500},100]),
+            timer:sleep(200),
             Function = fun(Child) ->
                 {Child_name,{_,{CurX,CurY},_}} = Child,
                 case CurX>400 andalso CurY>250 of
-                    true -> exit(global:whereis_name(Child_name),kill),gen_server:cast({global,?PC3},{transfer,Child_name,[Child]});
+                    true -> global:unregister_name(Child_name),gen_server:cast({global,?PC3},{transfer,Child_name,[Child]});
                     _    -> ok
                 end
             end,
             lists:foreach(Function, ets:tab2list(children));
     ?PC4 -> erpc:cast(?PC1,host,start,[?PC4,{800,0},{400,800,0,250},100]),
+            timer:sleep(200),
             Function = fun(Child) ->
                 {Child_name,{_,{CurX,CurY},_}} = Child,
                 case CurX>400 andalso CurY<250 of
-                    true -> exit(global:whereis_name(Child_name),kill),gen_server:cast({global,?PC4},{transfer,Child_name,[Child]});
+                    true -> global:unregister_name(Child_name),gen_server:cast({global,?PC4},{transfer,Child_name,[Child]});
                     _    -> ok
                 end
             end,
