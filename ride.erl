@@ -55,12 +55,12 @@ callback_mode() -> [state_functions].
 
 open(timeout, _, Father) ->
     %io:format("ride: open ~n"),
-    gen_server:cast({Father,Father},{ride,open}),
+    gen_server:cast({global,Father},{ride,open}),
     {next_state, work, Father ,2000}.
 
 work(timeout, _, Father) ->
   %io:format("ride: work ~n"),
-  gen_server:cast({Father,Father},{ride,work}),
+  gen_server:cast({global,Father},{ride,work}),
   case rand:uniform(10) > 9 of
     true -> {next_state, maintenance, Father, 30000};
     _    -> {next_state, open, Father, 30000}
@@ -68,7 +68,7 @@ work(timeout, _, Father) ->
 
 maintenance(timeout, _, Father) ->
   %io:format("ride: maintenance ~n"),
-  gen_server:cast({Father,Father},{ride,maintenance}),
+  gen_server:cast({global,Father},{ride,maintenance}),
   {next_state, open, Father, 10000}.
 
 %% @private
