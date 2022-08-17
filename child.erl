@@ -88,7 +88,6 @@ walking(timeout, _, Data) ->
     true  -> [{_,{DstX,DstY}}] = ets:lookup(Data,destination);
     false -> {DstX,DstY} = {0,0}
   end,
-  [{_,Father}] = ets:lookup(Data,father),
   gen_server:cast({global,node()},{Data,{{DstX,DstY},{CurX,CurY},Money}}),
 
   case CurX =:= DstX andalso CurY =:= DstY of
@@ -129,7 +128,6 @@ in_queue(timeout, _, Data) ->
 on_ride(enter, _OldState, Data) ->
   %io:format("on_ride~n"),
   [{_,Money}] = ets:lookup(Data,money),
-  [{_,Father}] = ets:lookup(Data,father),
   gen_server:cast({global,node()},money),
   ets:insert(Data,{money, Money-1}),
   enter_ride(Data),
@@ -138,7 +136,6 @@ on_ride(enter, _OldState, Data) ->
 on_ride(timeout, _, Data) ->
   %io:format("finish_ride~n"),
   [{_,{DstX,DstY}}] = ets:lookup(Data,destination),
-  [{_,Father}] = ets:lookup(Data,father),
   [{_,Money}] = ets:lookup(Data,money),
   gen_server:cast({global,node()},{Data,{{DstX,DstY},{DstX,DstY},Money}}),
   {next_state, walking, Data}.
@@ -156,7 +153,6 @@ terminate(_Reason, _StateName, Data ) ->
 %%%===================================================================
 enter_ride(Data)->
   [{_,{DstX,DstY}}] = ets:lookup(Data,destination),
-  [{_,Father}] = ets:lookup(Data,father),
   [{_,Money}] = ets:lookup(Data,money),
   case {DstX,DstY} of
     {590,245} -> case rand:uniform(3) of
