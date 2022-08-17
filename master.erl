@@ -67,10 +67,10 @@ handle_cast(Msg, []) ->
     gen_server:cast({global,gui},refresh),
     ets:insert(data,{children_count,Children_count}),
     %io:format("children_count: ~p~n", [Children_count]),
-    gen_server:cast({?PC1,?PC1},{children_count,Children_count}),
-    gen_server:cast({?PC2,?PC2},{children_count,Children_count}),
-    gen_server:cast({?PC3,?PC3},{children_count,Children_count}),
-    gen_server:cast({?PC4,?PC4},{children_count,Children_count}),
+    gen_server:cast({global,?PC1},{children_count,Children_count}),
+    gen_server:cast({global,?PC2},{children_count,Children_count}),
+    gen_server:cast({global,?PC3},{children_count,Children_count}),
+    gen_server:cast({global,?PC4},{children_count,Children_count}),
     %io:format("handle_call: ~p~n", [Msg]),
     {noreply, []}.
 
