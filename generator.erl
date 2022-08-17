@@ -27,7 +27,7 @@
 %% function does not return until Module:init/1 has returned.
 
 start() ->
-  gen_statem:start_link({local, generator},?MODULE, [], []).
+  gen_statem:start_link({global, generator},?MODULE, [], []).
 
 stop() ->
   gen_statem:stop(?MODULE).
@@ -48,12 +48,12 @@ init([]) ->
 callback_mode() -> [state_functions].
 
 main(timeout, _, Count) ->
-  gen_server:cast({?PC1,?PC1},trigger),
-  gen_server:cast({?PC2,?PC2},trigger),
-  gen_server:cast({?PC3,?PC3},trigger),
-  gen_server:cast({?PC4,?PC4},trigger),
+  gen_server:cast({global,?PC1},trigger),
+  gen_server:cast({global,?PC2},trigger),
+  gen_server:cast({global,?PC3},trigger),
+  gen_server:cast({global,?PC4},trigger),
   case Count rem 10 =:= 0 of
-    true -> gen_server:cast({master,?MASTER},statistics);
+    true -> gen_server:cast({global,master},statistics);
     _    -> ok
   end,
   {next_state, main, Count+1, ?REFRESH}.
