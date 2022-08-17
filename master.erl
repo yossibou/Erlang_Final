@@ -16,7 +16,7 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
 start() ->
-    Return = gen_server:start_link({local, master}, ?MODULE, [], []),
+    Return = gen_server:start_link({global, master}, ?MODULE, [], []),
     Return.
 stop() ->
 
