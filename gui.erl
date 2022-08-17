@@ -21,7 +21,7 @@
 %%%-------------------------------------------------------------------
 
 start() ->
-  wx_object:start({local,gui},?MODULE,[],[]).
+  wx_object:start({global,gui},?MODULE,[],[]).
 
 init([]) ->
   % graphics
