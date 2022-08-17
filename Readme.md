@@ -9,6 +9,7 @@ run instruction
 (same in multiple computer or on single computer - for single computer use same ip or loopback)
 
 1. Insert into the file computer.hrl the IP addresses of the secondary computers in the following manner:
+
 -define(PC1, 'PC1@IP_ADDRESS1').
 
 -define(PC2, 'PC2@IP_ADDRESS2').
