@@ -19,7 +19,7 @@
 -define(RATE, 20).
 
 start(HostName,Entrance,Borders,Count) ->
-    Return = gen_server:start_link({local, HostName}, ?MODULE, [HostName,Entrance,Borders,Count], []),
+    Return = gen_server:start_link({global, HostName}, ?MODULE, [HostName,Entrance,Borders,Count], []),
     io:format("start_link: ~p~n", [Return]),
     Return.
 stop() ->
@@ -69,9 +69,9 @@ handle_cast({ride,Status}, [HostName,Ets_children]) ->
 handle_cast(trigger, [HostName,Ets_children]) ->
     new_child([HostName,Ets_children]),
     Children = ets:tab2list(Ets_children),
-    gen_server:cast({master,?MASTER},Children),
+    gen_server:cast({global,master},Children),
     [{_,Money}] = ets:lookup(HostName,money),
-    gen_server:cast({master,?MASTER},{money,Money}),
+    gen_server:cast({global,master},{money,Money}),
     ets:insert(HostName,{money,0}),
     {noreply, [HostName,Ets_children]};
 
@@ -139,7 +139,7 @@ handle_child_transfer(Child_name,Dst_pc,Ets_children)->
     exit(whereis(Child_name),kill),
     Data = ets:lookup(Ets_children,Child_name),
     io:format("transfer: ~p to: ~p from: ~p data: ~p~n", [Child_name,Dst_pc,Ets_children,Data]),
-    gen_server:cast({Dst_pc,Dst_pc},{transfer,Child_name,Data}),
+    gen_server:cast({global,Dst_pc},{transfer,Child_name,Data}),
     ets:delete(Ets_children,Child_name).
 
 pc1(Child_name,CurX,CurY,East_border,South_border,Ets_children) ->
