@@ -64,7 +64,7 @@ handle_cast(Msg, []) ->
     Function = fun({Child_name,Data}) -> ets:insert(children,{Child_name,Data}) end,
     lists:foreach(Function, Msg),
     Children_count = length(ets:tab2list(children)),
-    gen_server:cast({gui,?MASTER},refresh),
+    gen_server:cast({global,gui},refresh),
     ets:insert(data,{children_count,Children_count}),
     %io:format("children_count: ~p~n", [Children_count]),
     gen_server:cast({?PC1,?PC1},{children_count,Children_count}),
@@ -85,7 +85,7 @@ handle_info({nodedown,PC},State)-> % if a node is down, check which PC, move res
             Function = fun(Child) ->
                 {Child_name,{_,{CurX,CurY},_}} = Child,
                 case CurX<400 andalso CurY<250 of
-                    true -> gen_server:cast({?PC1,?PC2},{transfer,Child_name,[Child]});
+                    true -> gen_server:cast({global,?PC1},{transfer,Child_name,[Child]});
                     _    -> ok
                 end
             end,
@@ -94,7 +94,7 @@ handle_info({nodedown,PC},State)-> % if a node is down, check which PC, move res
             Function = fun(Child) ->
                 {Child_name,{_,{CurX,CurY},_}} = Child,
                 case CurX<400 andalso CurY>250 of
-                    true -> gen_server:cast({?PC2,?PC3},{transfer,Child_name,[Child]});
+                    true -> gen_server:cast({global,?PC2},{transfer,Child_name,[Child]});
                     _    -> ok
                 end
             end,
@@ -103,7 +103,7 @@ handle_info({nodedown,PC},State)-> % if a node is down, check which PC, move res
             Function = fun(Child) ->
                 {Child_name,{_,{CurX,CurY},_}} = Child,
                 case CurX>400 andalso CurY>250 of
-                    true -> gen_server:cast({?PC3,?PC4},{transfer,Child_name,[Child]});
+                    true -> gen_server:cast({global,?PC3},{transfer,Child_name,[Child]});
                     _    -> ok
                 end
             end,
@@ -112,7 +112,7 @@ handle_info({nodedown,PC},State)-> % if a node is down, check which PC, move res
             Function = fun(Child) ->
                 {Child_name,{_,{CurX,CurY},_}} = Child,
                 case CurX>400 andalso CurY<250 of
-                    true -> gen_server:cast({?PC4,?PC1},{transfer,Child_name,[Child]});
+                    true -> gen_server:cast({global,?PC4},{transfer,Child_name,[Child]});
                     _    -> ok
                 end
             end,
