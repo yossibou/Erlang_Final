@@ -10,9 +10,13 @@ run instruction
 
 1. Insert into the file computer.hrl the IP addresses of the secondary computers in the following manner:
 -define(PC1, 'PC1@IP_ADDRESS1').
+
 -define(PC2, 'PC2@IP_ADDRESS2').
+
 -define(PC3, 'PC3@IP_ADDRESS3').
+
 -define(PC4, 'PC4@IP_ADDRESS4').
+
 -define(MASTER,'home@IP_ADDRESS5').
 
 2. On master computer run erl -setcookie dough -name home@IP_ADDRESS5
