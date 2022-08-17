@@ -47,7 +47,7 @@ init([Father,Child_Name,Destination,Position,Money]) ->
   ets:insert(Child_Name,{position,Position}),
   ets:insert(Child_Name,{destination, Destination}),
   ets:insert(Child_Name,{father, Father}),
-  {ok, walking, Child_Name}.
+  {ok, walking, [Child_Name,Father]}.
 
 %% @private
 %% @doc This function is called by a gen_statem when it needs to find out
@@ -60,12 +60,12 @@ callback_mode() -> [state_functions,state_enter].
 %% functions is called when gen_statem receives and event from
 %% call/2, cast/2, or as a normal process message.
 
-walking(enter, _OldState, Data) ->
-  [{_,Destination}] = ets:lookup(Data,destination),
-  [{_,Position}] = ets:lookup(Data,position),
+walking(enter, _OldState, [Child_Name,Father]) ->
+  [{_,Destination}] = ets:lookup(Child_Name,destination),
+  [{_,Position}] = ets:lookup(Child_Name,position),
   case Destination =:= Position of
     true ->
-      [{_,Money}] = ets:lookup(Data,money),
+      [{_,Money}] = ets:lookup(Child_Name,money),
       Ride_dst = rand:uniform(4),
       case Money>0 of
         true ->   case Ride_dst of
@@ -76,19 +76,19 @@ walking(enter, _OldState, Data) ->
                   end;
         false ->  NewDest = {0,0}
       end,
-      ets:insert(Data,{destination, NewDest});
+      ets:insert(Child_Name,{destination, NewDest});
     _ -> ok
   end,
-  {next_state, walking, Data, ?WALKING_TIMEOUT};
+  {next_state, walking, [Child_Name,Father], ?WALKING_TIMEOUT};
 
-walking(timeout, _, Data) ->
-  [{_, {CurX,CurY}}] = ets:lookup(Data,position),
-  [{_,Money}] = ets:lookup(Data,money),
+walking(timeout, _, [Child_Name,Father]) ->
+  [{_, {CurX,CurY}}] = ets:lookup(Child_Name,position),
+  [{_,Money}] = ets:lookup(Child_Name,money),
   case Money>0 of
-    true  -> [{_,{DstX,DstY}}] = ets:lookup(Data,destination);
+    true  -> [{_,{DstX,DstY}}] = ets:lookup(Child_Name,destination);
     false -> {DstX,DstY} = {0,0}
   end,
-  gen_server:cast({global,node()},{Data,{{DstX,DstY},{CurX,CurY},Money}}),
+  gen_server:cast({global,Father},{Child_Name,{{DstX,DstY},{CurX,CurY},Money}}),
 
   case CurX =:= DstX andalso CurY =:= DstY of
     false ->
@@ -108,37 +108,36 @@ walking(timeout, _, Data) ->
                   end;
          _ -> NewY = CurY
       end,
-      ets:insert(Data,{position, {NewX,NewY}}),
-      {next_state, walking, Data, ?WALKING_TIMEOUT};
-    _    -> {next_state, in_queue, Data}%%%arrive
+      ets:insert(Child_Name,{position, {NewX,NewY}}),
+      {next_state, walking, [Child_Name,Father], ?WALKING_TIMEOUT};
+    _    -> {next_state, in_queue, [Child_Name,Father]}%%%arrive
   end.
 
-in_queue(enter, _OldState, Data) ->
+in_queue(enter, _OldState, [Child_Name,Father]) ->
   %io:format("in_queue~n"),
-  {next_state, in_queue, Data, ?WALKING_TIMEOUT};
+  {next_state, in_queue, [Child_Name,Father], ?WALKING_TIMEOUT};
 
-in_queue(timeout, _, Data) ->
-  [{_,Father}] = ets:lookup(Data,father),
+in_queue(timeout, _, [Child_Name,Father]) ->
   [{_,Status}] = ets:lookup(Father,ride),
   case Status of
-    open -> {next_state, on_ride, Data};
-    _    -> {next_state, in_queue, Data, ?WALKING_TIMEOUT}
+    open -> {next_state, on_ride, [Child_Name,Father]};
+    _    -> {next_state, in_queue, [Child_Name,Father], ?WALKING_TIMEOUT}
   end.
 
-on_ride(enter, _OldState, Data) ->
+on_ride(enter, _OldState, [Child_Name,Father]) ->
   %io:format("on_ride~n"),
-  [{_,Money}] = ets:lookup(Data,money),
-  gen_server:cast({global,node()},money),
-  ets:insert(Data,{money, Money-1}),
-  enter_ride(Data),
-  {next_state, on_ride, Data, 30000};
+  [{_,Money}] = ets:lookup(Child_Name,money),
+  gen_server:cast({global,Father},money),
+  ets:insert(Child_Name,{money, Money-1}),
+  enter_ride([Child_Name,Father]),
+  {next_state, on_ride, [Child_Name,Father], 30000};
 
-on_ride(timeout, _, Data) ->
+on_ride(timeout, _, [Child_Name,Father]) ->
   %io:format("finish_ride~n"),
-  [{_,{DstX,DstY}}] = ets:lookup(Data,destination),
-  [{_,Money}] = ets:lookup(Data,money),
-  gen_server:cast({global,node()},{Data,{{DstX,DstY},{DstX,DstY},Money}}),
-  {next_state, walking, Data}.
+  [{_,{DstX,DstY}}] = ets:lookup(Child_Name,destination),
+  [{_,Money}] = ets:lookup(Child_Name,money),
+  gen_server:cast({global,Father},{Child_Name,{{DstX,DstY},{DstX,DstY},Money}}),
+  {next_state, walking, [Child_Name,Father]}.
 
 %% @private
 %% @doc This function is called by a gen_statem when it is about to
@@ -151,9 +150,9 @@ terminate(_Reason, _StateName, Data ) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-enter_ride(Data)->
-  [{_,{DstX,DstY}}] = ets:lookup(Data,destination),
-  [{_,Money}] = ets:lookup(Data,money),
+enter_ride([Child_Name,Father])->
+  [{_,{DstX,DstY}}] = ets:lookup(Child_Name,destination),
+  [{_,Money}] = ets:lookup(Child_Name,money),
   case {DstX,DstY} of
     {590,245} -> case rand:uniform(3) of
             1 -> Cur_pos = {614,126};
@@ -175,5 +174,5 @@ enter_ride(Data)->
          end;
         _     -> Cur_pos ={DstX,DstY}
   end,
-  gen_server:cast({global,node()},{Data,{{DstX,DstY},Cur_pos,Money}}).
+  gen_server:cast({global,Father},{Child_Name,{{DstX,DstY},Cur_pos,Money}}).
 
