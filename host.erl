@@ -39,6 +39,7 @@ init([HostName,Entrance,Borders,Count]) ->
     ets:insert(HostName,{children_count,Count}),
     ets:insert(HostName,{ride,open}),
     ets:insert(HostName,{money,0}),
+    ets:insert(HostName,{msg,0}),
     ets:insert(HostName,{total_child,0}),
     io:format("ready"),
     Return = {ok, [HostName,Ets_children]},
@@ -54,6 +55,8 @@ handle_cast(money, [HostName,Ets_children]) ->
     {noreply, [HostName,Ets_children]};
 
 handle_cast({transfer,_,Data}, [HostName,Ets_children]) ->
+    [{_,Msg}] = ets:lookup(HostName,msg),
+    ets:insert(HostName,{msg,Msg+1}),
     import_child([HostName,Ets_children],Data),
     %io:format("get transfer msg: ~p~n", [Data]),
     {noreply, [HostName,Ets_children]};
@@ -73,6 +76,9 @@ handle_cast(trigger, [HostName,Ets_children]) ->
     [{_,Money}] = ets:lookup(HostName,money),
     gen_server:cast({global,master},{money,Money}),
     ets:insert(HostName,{money,0}),
+    [{_,Msg}] = ets:lookup(HostName,msg),
+    gen_server:cast({global,master},{msg,Msg}),
+    ets:insert(HostName,{msg,0}),
     {noreply, [HostName,Ets_children]};
 
 handle_cast(Child_data, [HostName,Ets_children]) ->
