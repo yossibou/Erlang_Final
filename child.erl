@@ -121,7 +121,7 @@ in_queue(timeout, _, [Child_Name,Father]) ->
   [{_,Status}] = ets:lookup(Father,ride),
   case Status of
     open -> {next_state, on_ride, [Child_Name,Father]};
-    _    -> {next_state, in_queue, [Child_Name,Father], ?WALKING_TIMEOUT}
+    _    -> {next_state, on_ride, [Child_Name,Father]}
   end.
 
 on_ride(enter, _OldState, [Child_Name,Father]) ->
