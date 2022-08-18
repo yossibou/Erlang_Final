@@ -17,7 +17,7 @@
 %% gen_statem callbacks
 -export([init/1,terminate/3, callback_mode/0]).
 -export([walking/3,in_queue/3,on_ride/3]).
--define(WALKING_TIMEOUT, 100).
+-define(WALKING_TIMEOUT, 10).
 
 
 %%%===================================================================
@@ -130,7 +130,7 @@ on_ride(enter, _OldState, [Child_Name,Father]) ->
   gen_server:cast({global,Father},money),
   ets:insert(Child_Name,{money, Money-1}),
   enter_ride([Child_Name,Father]),
-  {next_state, on_ride, [Child_Name,Father], 30000};
+  {next_state, on_ride, [Child_Name,Father], 300};
 
 on_ride(timeout, _, [Child_Name,Father]) ->
   %io:format("finish_ride~n"),
