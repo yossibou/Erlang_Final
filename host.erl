@@ -16,7 +16,7 @@
 -export([init/1, handle_cast/2,handle_call/3,
          terminate/2]).
 -define(MaxTotalChildren, 120).
--define(RATE, 20).
+-define(RATE, 2).
 
 start(HostName,Entrance,Borders,Count) ->
     Return = gen_server:start_link({global, HostName}, ?MODULE, [HostName,Entrance,Borders,Count], []),
