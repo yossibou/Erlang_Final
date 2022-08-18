@@ -55,7 +55,7 @@ handle_cast(money, [HostName,Ets_children]) ->
 
 handle_cast({transfer,_,Data}, [HostName,Ets_children]) ->
     import_child([HostName,Ets_children],Data),
-    io:format("get transfer msg: ~p~n", [Data]),
+    %io:format("get transfer msg: ~p~n", [Data]),
     {noreply, [HostName,Ets_children]};
 
 handle_cast({children_count,Children_count},[HostName,Ets_children]) ->
@@ -124,7 +124,7 @@ new_child([HostName,Ets_children]) ->
                      Money = rand:uniform(10),
                      ets:insert(Ets_children,{Child_name,[{Entrance,Entrance,Money}]}),
                      spawn(child,start,[HostName,Child_name,Entrance,Entrance,Money]),
-                     io:format("New child: ~p~n", [Children_count+1]);
+                     %io:format("New child: ~p~n", [Children_count+1]);
                 _ -> ok
             end;
         _ -> ok
@@ -132,13 +132,13 @@ new_child([HostName,Ets_children]) ->
 
 import_child([HostName,Ets_children],[{Child_name,{Destination,Position,Money}}]) ->
      ets:insert(Ets_children,{Child_name,[{Destination,Position,Money}]}),
-     io:format(" import ~p~n", [spawn(child,start,[HostName,Child_name,Destination,Position,Money])]).
+     %io:format(" import ~p~n", [spawn(child,start,[HostName,Child_name,Destination,Position,Money])]).
 
 
 handle_child_transfer(Child_name,Dst_pc,Ets_children)->
     exit(global:whereis_name(Child_name),kill),
     Data = ets:lookup(Ets_children,Child_name),
-    io:format("transfer: ~p to: ~p from: ~p data: ~p~n", [Child_name,Dst_pc,Ets_children,Data]),
+    %io:format("transfer: ~p to: ~p from: ~p data: ~p~n", [Child_name,Dst_pc,Ets_children,Data]),
     gen_server:cast({global,Dst_pc},{transfer,Child_name,Data}),
     ets:delete(Ets_children,Child_name).
 
