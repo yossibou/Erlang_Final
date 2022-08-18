@@ -123,7 +123,7 @@ new_child([HostName,Ets_children]) ->
                      ets:insert(HostName,{children_count,Children_count+1}),
                      Money = rand:uniform(10),
                      ets:insert(Ets_children,{Child_name,[{Entrance,Entrance,Money}]}),
-                     spawn(child,start,[HostName,Child_name,Entrance,Entrance,Money]),
+                     spawn(child,start,[HostName,Child_name,Entrance,Entrance,Money]);
                      %io:format("New child: ~p~n", [Children_count+1]);
                 _ -> ok
             end;
