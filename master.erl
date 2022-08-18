@@ -67,8 +67,8 @@ handle_cast(statistics, []) ->
     {noreply, []};
 
 handle_cast(Msg, []) ->
-        [{_,Msg}] = ets:lookup(data,msg),     
-    ets:insert(data,{msg,Msg+1}),
+        [{_,Msg1}] = ets:lookup(data,msg),     
+    ets:insert(data,{msg,Msg1+1}),
     Function = fun({Child_name,Data}) -> ets:insert(children,{Child_name,Data}) end,
     lists:foreach(Function, Msg),
     Children_count = length(ets:tab2list(children)),
