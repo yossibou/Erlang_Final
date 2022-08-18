@@ -131,7 +131,7 @@ new_child([HostName,Ets_children]) ->
     end.
 
 import_child([HostName,Ets_children],[{Child_name,{Destination,Position,Money}}]) ->
-     ets:insert(Ets_children,{Child_name,[{Destination,Position,Money}]}),
+     ets:insert(Ets_children,{Child_name,[{Destination,Position,Money}]}).
      %io:format(" import ~p~n", [spawn(child,start,[HostName,Child_name,Destination,Position,Money])]).
 
 
