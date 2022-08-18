@@ -39,7 +39,7 @@ init([]) ->
     timer:sleep(200),
     erpc:cast(?PC4,host,start,[?PC4,{800,0},{400,800,0,250},0]),
     timer:sleep(200),
-    %spawn(gui,start,[]),
+    spawn(gui,start,[]),
     spawn(generator,start,[]),
     Return = {ok, []},
     Return.
