@@ -15,7 +15,7 @@
 -export([start/4,stop/0]).
 -export([init/1, handle_cast/2,handle_call/3,
          terminate/2]).
--define(MaxTotalChildren, 6).
+-define(MaxTotalChildren, 12).
 -define(RATE, 20).
 
 start(HostName,Entrance,Borders,Count) ->
