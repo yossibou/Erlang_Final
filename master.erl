@@ -29,6 +29,7 @@ init([]) ->
     ets:new(data,[set,named_table]),
     ets:insert(data,{children_count,0}),
     ets:insert(data,{money,0}),
+    ets:insert(data,{msg,0}),
 
     % start all servers
     erpc:cast(?PC1,host,start,[?PC1,{0,0},{0,400,0,250},0]),
@@ -39,7 +40,7 @@ init([]) ->
     timer:sleep(200),
     erpc:cast(?PC4,host,start,[?PC4,{800,0},{400,800,0,250},0]),
     timer:sleep(200),
-    spawn(gui,start,[]),
+    %spawn(gui,start,[]),
     spawn(generator,start,[]),
     Return = {ok, []},
     Return.
@@ -49,6 +50,8 @@ handle_call(_Request, _From, []) ->
     {reply, Reply, []}.
 
 handle_cast({money,Val}, []) ->
+        [{_,Msg}] = ets:lookup(data,money),     
+    ets:insert(data,{msg,Msg+1}),
     [{_,Money}] = ets:lookup(data,money),
     ets:insert(data,{money,Money + Val}),
     {noreply, []};
@@ -56,11 +59,16 @@ handle_cast({money,Val}, []) ->
 handle_cast(statistics, []) ->
     io:format("statistics ~n"),
     [{_,Money}] = ets:lookup(data,money),
+    [{_,Msg}] = ets:lookup(data,money),     
+    ets:insert(data,{msg,Msg+1}),
     io:format("money: ~p ~n",[Money]),
-    io:format("children list: ~n ~p ~n",[ets:tab2list(children)]),
+    io:format("msg count: ~p ~n",[Msg]),
+    %io:format("children list: ~n ~p ~n",[ets:tab2list(children)]),
     {noreply, []};
 
 handle_cast(Msg, []) ->
+        [{_,Msg}] = ets:lookup(data,money),     
+    ets:insert(data,{msg,Msg+1}),
     Function = fun({Child_name,Data}) -> ets:insert(children,{Child_name,Data}) end,
     lists:foreach(Function, Msg),
     Children_count = length(ets:tab2list(children)),
