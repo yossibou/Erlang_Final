@@ -50,7 +50,7 @@ handle_call(_Request, _From, []) ->
     {reply, Reply, []}.
 
 handle_cast({money,Val}, []) ->
-        [{_,Msg}] = ets:lookup(data,money),     
+        [{_,Msg}] = ets:lookup(data,msg),     
     ets:insert(data,{msg,Msg+1}),
     [{_,Money}] = ets:lookup(data,money),
     ets:insert(data,{money,Money + Val}),
@@ -59,7 +59,7 @@ handle_cast({money,Val}, []) ->
 handle_cast(statistics, []) ->
     io:format("statistics ~n"),
     [{_,Money}] = ets:lookup(data,money),
-    [{_,Msg}] = ets:lookup(data,money),     
+    [{_,Msg}] = ets:lookup(data,msg),     
     ets:insert(data,{msg,Msg+1}),
     io:format("money: ~p ~n",[Money]),
     io:format("msg count: ~p ~n",[Msg]),
@@ -67,7 +67,7 @@ handle_cast(statistics, []) ->
     {noreply, []};
 
 handle_cast(Msg, []) ->
-        [{_,Msg}] = ets:lookup(data,money),     
+        [{_,Msg}] = ets:lookup(data,msg),     
     ets:insert(data,{msg,Msg+1}),
     Function = fun({Child_name,Data}) -> ets:insert(children,{Child_name,Data}) end,
     lists:foreach(Function, Msg),
