@@ -30,6 +30,7 @@ init([]) ->
     ets:insert(data,{children_count,0}),
     ets:insert(data,{money,0}),
     ets:insert(data,{msg,0}),
+    ets:insert(data,{msg2,0}),
 
     % start all servers
     erpc:cast(?PC1,host,start,[?PC1,{0,0},{0,400,0,250},0]),
@@ -56,13 +57,23 @@ handle_cast({money,Val}, []) ->
     ets:insert(data,{money,Money + Val}),
     {noreply, []};
 
+handle_cast({msg,Val}, []) ->
+    [{_,Msg}] = ets:lookup(data,msg),     
+    ets:insert(data,{msg,Msg+1}),
+    [{_,Msg2}] = ets:lookup(data,msg2),
+    ets:insert(data,{msg2,Msg2 + Val}),
+    {noreply, []};
+
 handle_cast(statistics, []) ->
     io:format("statistics ~n"),
     [{_,Money}] = ets:lookup(data,money),
-    [{_,Msg}] = ets:lookup(data,msg),     
-    ets:insert(data,{msg,Msg+1}),
+    [{_,Children_count}] = ets:lookup(data,children_count),
+    [{_,Msg}] = ets:lookup(data,msg),   
+    [{_,Msg2}] = ets:lookup(data,msg2), 
+    io:format("Children_count: ~p ~n",[Children_count]),
     io:format("money: ~p ~n",[Money]),
-    io:format("msg count: ~p ~n",[Msg]),
+    io:format("msg host-master count: ~p ~n",[Msg]),
+    io:format("msg host-host count: ~p ~n",[Msg2]),
     %io:format("children list: ~n ~p ~n",[ets:tab2list(children)]),
     {noreply, []};
 
